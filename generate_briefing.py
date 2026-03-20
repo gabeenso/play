@@ -6,12 +6,20 @@ Run manually or via GitHub Actions cron.
 """
 
 import requests
-import yfinance as yf
 import json
 import os
 import sys
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
+
+# Yahoo Finance direct API headers (more reliable than yfinance)
+YF_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+    "Accept": "application/json,text/plain,*/*",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Origin": "https://finance.yahoo.com",
+    "Referer": "https://finance.yahoo.com/",
+}
 
 # ─── LIVE DATA FETCHERS ────────────────────────────────────────
 
@@ -71,8 +79,28 @@ def fetch_fear_greed():
         return {"value": 0, "label": "Unknown"}
 
 
+def fetch_yahoo_quote(symbol):
+    """Fetch a single quote from Yahoo Finance v8 API directly."""
+    try:
+        url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval=1d&range=5d"
+        r = requests.get(url, headers=YF_HEADERS, timeout=12)
+        r.raise_for_status()
+        data = r.json()
+        closes = data["chart"]["result"][0]["indicators"]["quote"][0]["close"]
+        closes = [c for c in closes if c is not None]
+        if len(closes) < 2:
+            return None
+        latest = round(closes[-1], 4)
+        prev   = closes[-2]
+        change = round((latest - prev) / prev * 100, 2)
+        return {"price": latest, "change_pct": change}
+    except Exception as e:
+        print(f"[WARN] Yahoo quote {symbol} failed: {e}")
+        return None
+
+
 def fetch_market_indices():
-    """Yahoo Finance via yfinance — no key required."""
+    """Yahoo Finance direct API — no library required."""
     tickers = {
         "SPX":    "^GSPC",
         "VIX":    "^VIX",
@@ -83,36 +111,29 @@ def fetch_market_indices():
     }
     results = {}
     for name, sym in tickers.items():
-        try:
-            t = yf.Ticker(sym)
-            hist = t.history(period="5d")
-            if hist.empty:
-                results[name] = {"price": None, "change_pct": None}
-                continue
-            latest = float(hist["Close"].iloc[-1])
-            prev   = float(hist["Close"].iloc[-2]) if len(hist) > 1 else latest
-            change = round((latest - prev) / prev * 100, 2)
-            results[name] = {"price": round(latest, 2), "change_pct": change}
-        except Exception as e:
-            print(f"[WARN] yfinance {sym} failed: {e}")
-            results[name] = {"price": None, "change_pct": None}
+        q = fetch_yahoo_quote(sym)
+        results[name] = q if q else {"price": None, "change_pct": None}
     return results
 
 
 def fetch_sp500_ma():
     """Check S&P 500 50d vs 200d moving average (death cross detector)."""
     try:
-        t = yf.Ticker("^GSPC")
-        hist = t.history(period="1y")
-        if len(hist) < 200:
+        url = "https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?interval=1d&range=1y"
+        r = requests.get(url, headers=YF_HEADERS, timeout=15)
+        r.raise_for_status()
+        data  = r.json()
+        closes = data["chart"]["result"][0]["indicators"]["quote"][0]["close"]
+        closes = [c for c in closes if c is not None]
+        if len(closes) < 200:
             return {"ma50": None, "ma200": None, "death_cross": None}
-        ma50  = float(hist["Close"].rolling(50).mean().iloc[-1])
-        ma200 = float(hist["Close"].rolling(200).mean().iloc[-1])
-        death_cross = ma50 < ma200
+        import statistics
+        ma50  = round(sum(closes[-50:])  / 50,  0)
+        ma200 = round(sum(closes[-200:]) / 200, 0)
         return {
-            "ma50":        round(ma50, 0),
-            "ma200":       round(ma200, 0),
-            "death_cross": death_cross,
+            "ma50":        ma50,
+            "ma200":       ma200,
+            "death_cross": ma50 < ma200,
         }
     except Exception as e:
         print(f"[WARN] S&P MA fetch failed: {e}")
