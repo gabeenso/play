@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Intel Briefing · Fri 20 Mar 2026 18:49 AEDT</title>
+<style>
+  :root{--bg:#0d0f14;--card:#141720;--card2:#1a1f2e;--border:#252a3a;--text:#e2e8f0;--muted:#8892a4;--danger:#ff4444;--danger-glow:rgba(255,68,68,.25);--caution:#f59e0b;--caution-glow:rgba(245,158,11,.25);--clear:#22c55e;--clear-glow:rgba(34,197,94,.25);--accent:#6366f1}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px;line-height:1.5}
+  .container{max-width:1280px;margin:0 auto;padding:24px 16px}
+  .master-banner{background:linear-gradient(135deg,#1a0a0a,#2a1010);border:2px solid #ff4444;border-radius:12px;padding:20px 28px;margin-bottom:24px;box-shadow:0 0 30px rgba(255,68,68,.3);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px}
+  .master-banner h1{font-size:22px;font-weight:700}
+  .verdict-badge{font-size:28px;font-weight:900;letter-spacing:3px;color:#ff4444;text-shadow:0 0 20px #ff4444}
+  .meta{color:var(--muted);font-size:12px;margin-top:4px}
+  .live-badge{display:inline-block;background:rgba(34,197,94,.15);color:#22c55e;border:1px solid #22c55e;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700;letter-spacing:1px;animation:pulse 2s infinite}
+  .checklist-section{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:24px}
+  .checklist-section h2{font-size:13px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-bottom:14px}
+  .checklist-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px}
+  .check-item{display:flex;align-items:center;gap:10px;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:13px}
+  .check-icon{font-size:16px;flex-shrink:0}
+  .check-item.done{border-color:rgba(34,197,94,.3);background:rgba(34,197,94,.05)}
+  .check-item.partial{border-color:rgba(245,158,11,.3);background:rgba(245,158,11,.05)}
+  .check-item.open{border-color:rgba(255,68,68,.3);background:rgba(255,68,68,.05)}
+  .live-section{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:24px}
+  .live-section-header{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+  .live-section-header h2{font-size:16px;font-weight:700;text-transform:uppercase;letter-spacing:1px}
+  .live-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+  .live-card{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px}
+  .live-card-label{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:6px}
+  .live-card-value{font-size:22px;font-weight:700;margin-bottom:4px}
+  .live-card-sub{font-size:12px;color:var(--muted)}
+  .section-header{display:flex;align-items:center;gap:12px;margin:28px 0 14px;flex-wrap:wrap}
+  .section-header h2{font-size:16px;font-weight:700;text-transform:uppercase;letter-spacing:1px}
+  .section-num{color:var(--muted);font-size:12px}
+  .cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:14px}
+  .edit-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;position:relative}
+  .edit-card.danger{border-color:rgba(255,68,68,.5);box-shadow:0 0 12px var(--danger-glow)}
+  .edit-card.caution{border-color:rgba(245,158,11,.4);box-shadow:0 0 12px var(--caution-glow)}
+  .edit-card.clear{border-color:rgba(34,197,94,.4);box-shadow:0 0 12px var(--clear-glow)}
+  .glow-dot{width:10px;height:10px;border-radius:50%;position:absolute;top:14px;right:14px;animation:pulse 2s infinite}
+  .card-label{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:6px}
+  .card-value{font-size:20px;font-weight:700;margin-bottom:4px}
+  .card-sub{font-size:12px;color:var(--muted)}
+  .card-note{font-size:12px;margin-top:8px;color:var(--text)}
+  .verdict-inline{display:inline-block;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+  .action-bar{background:linear-gradient(90deg,var(--card2),var(--card));border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:8px;padding:12px 18px;font-size:13px;margin-bottom:8px}
+  .action-bar strong{color:var(--accent)}
+  .crypto-table-wrap{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:14px}
+  table{width:100%;border-collapse:collapse}
+  thead{background:var(--card2)}
+  th{padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);border-bottom:1px solid var(--border)}
+  td{padding:12px 14px;border-bottom:1px solid rgba(37,42,58,.5);font-size:13px}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:rgba(255,255,255,.02)}
+  .summary-table{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin:24px 0}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  @media(max-width:600px){.master-banner{flex-direction:column}.live-grid{grid-template-columns:repeat(2,1fr)}.cards-grid{grid-template-columns:1fr}}
+  footer{text-align:center;color:var(--muted);font-size:11px;padding:24px 0 12px}
+  hr{border:none;border-top:1px solid var(--border);margin:8px 0}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- MASTER BANNER -->
+  <div class="master-banner">
+    <div>
+      <h1>⚡ Weekly Intelligence Briefing</h1>
+      <div class="meta">Gabe Enslin · Market data updated: Fri 20 Mar 2026 18:49 AEDT &nbsp;<span class="live-badge">● LIVE</span></div>
+      <div class="meta" style="margin-top:4px">Editorial commentary: updated 20 Mar 2026</div>
+    </div>
+    <div style="text-align:right">
+      <div class="verdict-badge">⚠ DANGER</div>
+      <div class="meta">Multiple red flags: credit gates, cycle peak, valuations extreme</div>
+    </div>
+  </div>
+
+  <!-- TRIGGER CHECKLIST -->
+  <div class="checklist-section">
+    <h2>🎯 Re-Entry Trigger Checklist</h2>
+    <div class="checklist-grid"><div class="check-item open"><span class="check-icon">☐</span>Buffett Indicator < 160% (currently 213–217%)</div><div class="check-item open"><span class="check-icon">☐</span>CAPE < 25 (currently ~38–39)</div><div class="check-item open"><span class="check-icon">☐</span>HY spreads < 350 bps (currently ~470 bps)</div><div class="check-item open"><span class="check-icon">☐</span>IG spreads < 80 bps (currently ~120 bps)</div><div class="check-item open"><span class="check-icon">☐</span>Private credit gates lifted / default rate < 5%</div><div class="check-item partial"><span class="check-icon">◐</span>Phil Anderson: post-2026 peak confirmed + 6–12 months</div><div class="check-item partial"><span class="check-icon">◐</span>RBA pivot to cuts (currently hiking — rate at 4.10%)</div><div class="check-item open"><span class="check-icon">☐</span>S&P 500 golden cross restored (50d back above 200d)</div><div class="check-item open"><span class="check-icon">☐</span>BTC Fear & Greed back above 60 (see live data above)</div><div class="check-item done"><span class="check-icon">✓</span>AI robotics commercial deployment confirmed (Agility/BD shipping)</div><div class="check-item done"><span class="check-icon">✓</span>AU–US critical minerals framework signed ($8.5B pipeline)</div><div class="check-item partial"><span class="check-icon">◐</span>Oil back below $90 (currently $119+ — Hormuz crisis)</div></div>
+  </div>
+
+  <!-- LIVE MARKET DATA -->
+  <div class="live-section">
+    <div class="live-section-header">
+      <span style="color:#8892a4;font-size:12px">00</span>
+      <h2>Live Market Snapshot</h2>
+      <span class="live-badge">● AUTO-UPDATES DAILY</span>
+    </div>
+    <div class="live-grid">
+      <div class="live-card">
+        <div class="live-card-label">S&amp;P 500</div>
+        <div class="live-card-value">—</div>
+        <div class="live-card-sub"></div>
+      </div>
+      <div class="live-card">
+        <div class="live-card-label">VIX (Fear Index)</div>
+        <div class="live-card-value" style="color:#22c55e">—</div>
+        <div class="live-card-sub"></div>
+      </div>
+      <div class="live-card">
+        <div class="live-card-label">Death Cross (50d/200d)</div>
+        <div class="live-card-value" style="font-size:14px;color:#22c55e">—</div>
+        <div class="live-card-sub">50d: None · 200d: None</div>
+      </div>
+      <div class="live-card">
+        <div class="live-card-label">HY Credit Spreads</div>
+        <div class="live-card-value" style="color:#ff4444">—</div>
+        <div class="live-card-sub"> · <span style="font-size:11px">FRED data: None</span></div>
+      </div>
+      <div class="live-card">
+        <div class="live-card-label">IG Credit Spreads</div>
+        <div class="live-card-value" style="color:#f59e0b">—</div>
+        <div class="live-card-sub"> · <span style="font-size:11px">FRED data: None</span></div>
+      </div>
+      <div class="live-card">
+        <div class="live-card-label">Fear &amp; Greed Index</div>
+        <div class="live-card-value" style="color:#ff4444">😱 0</div>
+        <div class="live-card-sub">Unknown</div>
+      </div>
+      <div class="live-card">
+        <div class="live-card-label">Oil (WTI)</div>
+        <div class="live-card-value">—</div>
+        <div class="live-card-sub"></div>
+      </div>
+      <div class="live-card">
+        <div class="live-card-label">Gold</div>
+        <div class="live-card-value">—</div>
+        <div class="live-card-sub"></div>
+      </div>
+      <div class="live-card">
+        <div class="live-card-label">AUD/USD</div>
+        <div class="live-card-value">—</div>
+        <div class="live-card-sub"></div>
+      </div>
+      <div class="live-card">
+        <div class="live-card-label">US 10Y Yield</div>
+        <div class="live-card-value">—</div>
+        <div class="live-card-sub"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIVE CRYPTO -->
+  <div class="section-header">
+    <span class="section-num">CRYPTO</span>
+    <h2>Crypto</h2>
+    <span class="live-badge" style="font-size:11px;background:rgba(34,197,94,.15);color:#22c55e;border:1px solid #22c55e;border-radius:4px;padding:2px 8px;font-weight:700">● LIVE PRICES</span>
+    <span style="font-size:11px;color:#8892a4;margin-left:auto">F&amp;G: 0 — Unknown 😱</span>
+  </div>
+  <div class="crypto-table-wrap">
+    <table>
+      <thead><tr><th>Symbol</th><th>Price (USD)</th><th>24h</th><th>7d</th><th>Signal (weekly)</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <div class="action-bar"><strong>Crypto Action:</strong> No new positions until F&G recovers above 50 or oil drops below $90. BTC $65K = starter entry signal. ETH, XRP, SOL — stand aside.</div>
+
+  <!-- EDITORIAL SECTIONS -->
+  
+      <div class="section-header">
+        <span class="section-num">01</span>
+        <h2>Market Health</h2>
+        <span class="verdict-inline" style="background:rgba(0,0,0,0.3);color:#ff4444;border:1px solid #ff4444">DANGER</span>
+        <span style="font-size:11px;color:#8892a4;margin-left:auto">Weekly editorial · Updated 20 Mar 2026</span>
+      </div>
+      <div class="cards-grid">
+            <div class="edit-card danger">
+              <div class="glow-dot" style="background:#ff4444;box-shadow:0 0 8px #ff4444"></div>
+              <div class="card-label">Buffett Indicator</div>
+              <div class="card-value" style="color:#ff4444">213–217%</div>
+              <div class="card-sub"><span style="color:#22c55e;font-weight:700">▲</span> 64% above trend · 2σ overvalued vs 200% threshold</div>
+              <div class="card-note">Long-term fair value ~120%. Only 3rd time in 60 years at this level.</div>
+            </div>
+            <div class="edit-card danger">
+              <div class="glow-dot" style="background:#ff4444;box-shadow:0 0 8px #ff4444"></div>
+              <div class="card-label">Shiller CAPE Ratio</div>
+              <div class="card-value" style="color:#ff4444">~38–39</div>
+              <div class="card-sub"><span style="color:#94a3b8;font-weight:700">=</span> Long-term average ~17 · Dot-com was 44</div>
+              <div class="card-note">Only two times in history above 40 — the other was dot-com peak.</div>
+            </div>
+            <div class="edit-card danger">
+              <div class="glow-dot" style="background:#ff4444;box-shadow:0 0 8px #ff4444"></div>
+              <div class="card-label">Private Credit Stress</div>
+              <div class="card-value" style="color:#ff4444">9.2% Default Rate</div>
+              <div class="card-sub"><span style="color:#22c55e;font-weight:700">▲</span> Blackstone BCRED gated · BlackRock HPS limited</div>
+              <div class="card-note">$265B exposure. Redemption queues 3–5 quarters. Record high default rate.</div>
+            </div>
+            <div class="edit-card caution">
+              <div class="glow-dot" style="background:#f59e0b;box-shadow:0 0 8px #f59e0b"></div>
+              <div class="card-label">Berkshire / Abel</div>
+              <div class="card-value" style="color:#f59e0b">$381.7B Cash</div>
+              <div class="card-sub"><span style="color:#22c55e;font-weight:700">▲</span> Greg Abel CEO Jan 2026 · Cut Apple to $60B · Sold BofA</div>
+              <div class="card-note">Largest cash hoard ever. Loudest possible wait signal.</div>
+            </div>
+            <div class="edit-card caution">
+              <div class="glow-dot" style="background:#f59e0b;box-shadow:0 0 8px #f59e0b"></div>
+              <div class="card-label">Ray Dalio / Bridgewater</div>
+              <div class="card-value" style="color:#f59e0b">Pre-1945 Signal</div>
+              <div class="card-sub"><span style="color:#94a3b8;font-weight:700">=</span> Fortune interview Mar 16 · Stage 5 Big Cycle · Capital wars</div>
+              <div class="card-note">AI boom 'more dangerous' phase. AIA Labs hit $5B AUM.</div>
+            </div>
+            <div class="edit-card caution">
+              <div class="glow-dot" style="background:#f59e0b;box-shadow:0 0 8px #f59e0b"></div>
+              <div class="card-label">Howard Marks / Oaktree</div>
+              <div class="card-value" style="color:#f59e0b">'Level 3' AI Risk</div>
+              <div class="card-sub"><span style="color:#22c55e;font-weight:700">▲</span> Bloomberg Mar 17–18 · 'Is It a Bubble?' memo</div>
+              <div class="card-note">Now sees AI as full labour replacement. 'Shaken' by implications. New memo weeks away.</div>
+            </div>
+            <div class="edit-card danger">
+              <div class="glow-dot" style="background:#ff4444;box-shadow:0 0 8px #ff4444"></div>
+              <div class="card-label">Jeremy Grantham / GMO</div>
+              <div class="card-value" style="color:#ff4444">Severe Decline Ahead</div>
+              <div class="card-sub"><span style="color:#94a3b8;font-weight:700">=</span> U.S. equities 2σ above real price trend</div>
+              <div class="card-note">AI bubble = great tech → great bubble pattern. Profit plunge forecast.</div>
+            </div></div>
+      <div class="action-bar"><strong>Action:</strong> Stay defensive. No new long equity positions. Cash and short-duration bonds only. Private credit gates are the new canary — this isn't valuation noise anymore.</div>
+      <div class="section-header">
+        <span class="section-num">02</span>
+        <h2>Key People — Cycle Theorists</h2>
+        <span class="verdict-inline" style="background:rgba(0,0,0,0.3);color:#ff4444;border:1px solid #ff4444">DANGER</span>
+        <span style="font-size:11px;color:#8892a4;margin-left:auto">Weekly editorial · Updated 20 Mar 2026</span>
+      </div>
+      <div class="cards-grid">
+            <div class="edit-card danger">
+              <div class="glow-dot" style="background:#ff4444;box-shadow:0 0 8px #ff4444"></div>
+              <div class="card-label">Phil Anderson</div>
+              <div class="card-value" style="color:#ff4444">2026 = Cycle Peak</div>
+              <div class="card-sub"><span style="color:#94a3b8;font-weight:700">=</span> Winner's Curse phase · Cycle 2012–2026–2031</div>
+              <div class="card-note">Housing stocks rolling over, BTC speculation, banking deregulation — all classic peak signals.</div>
+            </div>
+            <div class="edit-card danger">
+              <div class="glow-dot" style="background:#ff4444;box-shadow:0 0 8px #ff4444"></div>
+              <div class="card-label">Fred Harrison</div>
+              <div class="card-value" style="color:#ff4444">Late 2026 Turning Point</div>
+              <div class="card-sub"><span style="color:#94a3b8;font-weight:700">=</span> Doubled down · Land prices = engine</div>
+              <div class="card-note">Binary choice approaching: mortgage vs food. When supermarket wins → market collapses.</div>
+            </div>
+            <div class="edit-card danger">
+              <div class="glow-dot" style="background:#ff4444;box-shadow:0 0 8px #ff4444"></div>
+              <div class="card-label">Akhil Patel</div>
+              <div class="card-value" style="color:#ff4444">Final Upswing Peaking</div>
+              <div class="card-sub"><span style="color:#94a3b8;font-weight:700">=</span> Mid-cycle dip exited · 2026 peak confirmed</div>
+              <div class="card-note">Three independent signals from three theorists — same endpoint.</div>
+            </div>
+            <div class="edit-card danger">
+              <div class="glow-dot" style="background:#ff4444;box-shadow:0 0 8px #ff4444"></div>
+              <div class="card-label">Jeremy Grantham</div>
+              <div class="card-value" style="color:#ff4444">AI Bubble Warning</div>
+              <div class="card-sub"><span style="color:#94a3b8;font-weight:700">=</span> Feb/Mar 2026 · Conviction unchanged</div>
+              <div class="card-note">Great innovations → great bubbles. AI deflation = profit plunge + valuation decline.</div>
+            </div></div>
+      <div class="action-bar"><strong>Action:</strong> All three land cycle theorists in unison on 2026 peak. No new Australian or US real estate positions. Watch Harrison's 'food vs mortgage' indicator — residential mortgage default spike = cycle confirmation.</div>
+      <div class="section-header">
+        <span class="section-num">03</span>
+        <h2>AI Robotics</h2>
+        <span class="verdict-inline" style="background:rgba(0,0,0,0.3);color:#22c55e;border:1px solid #22c55e">ACCELERATING</span>
+        <span style="font-size:11px;color:#8892a4;margin-left:auto">Weekly editorial · Updated 20 Mar 2026</span>
+      </div>
+      <div class="cards-grid">
+            <div class="edit-card clear">
+              <div class="glow-dot" style="background:#22c55e;box-shadow:0 0 8px #22c55e"></div>
+              <div class="card-label">Tesla Optimus</div>
+              <div class="card-value" style="color:#22c55e">Gen 3 Hands Live</div>
+              <div class="card-sub"><span style="color:#22c55e;font-weight:700">▲</span> 50 actuators/hand · Factory testing Fremont & Austin</div>
+              <div class="card-note">V3 production summer 2026. External sales late 2026. 'Digital Optimus' (Tesla×xAI) announced Mar 11.</div>
+            </div>
+            <div class="edit-card clear">
+              <div class="glow-dot" style="background:#22c55e;box-shadow:0 0 8px #22c55e"></div>
+              <div class="card-label">Figure AI</div>
+              <div class="card-value" style="color:#22c55e">$39B Valuation</div>
+              <div class="card-sub"><span style="color:#22c55e;font-weight:700">▲</span> $1B+ Series C · Led by Nvidia</div>
+              <div class="card-note">Largest humanoid raise to date. Nvidia backing = inference-at-edge signal.</div>
+            </div>
+            <div class="edit-card clear">
+              <div class="glow-dot" style="background:#22c55e;box-shadow:0 0 8px #22c55e"></div>
+              <div class="card-label">Apptronik</div>
+              <div class="card-value" style="color:#22c55e">$5.5B · $935M raised</div>
+              <div class="card-sub"><span style="color:#22c55e;font-weight:700">▲</span> $520M extension Feb 2026 · 3× valuation in 12 months</div>
+              <div class="card-note">Apollo deployed at Mercedes & GXO. Investors: John Deere, Qatar Investment Authority, AT&T Ventures.</div>
+            </div>
+            <div class="edit-card clear">
+              <div class="glow-dot" style="background:#22c55e;box-shadow:0 0 8px #22c55e"></div>
+              <div class="card-label">Boston Dynamics Atlas</div>
+              <div class="card-value" style="color:#22c55e">Production 2026</div>
+              <div class="card-sub"><span style="color:#22c55e;font-weight:700">▲</span> Electric Atlas unveiled CES 2026 · DeepMind partnership</div>
+              <div class="card-note">First units to Hyundai RMAC + Google DeepMind. Customer deployments 2027.</div>
+            </div>
+            <div class="edit-card clear">
+              <div class="glow-dot" style="background:#22c55e;box-shadow:0 0 8px #22c55e"></div>
+              <div class="card-label">Agility Robotics (Digit)</div>
+              <div class="card-value" style="color:#22c55e">1st Automotive Deploy</div>
+              <div class="card-sub"><span style="color:#22c55e;font-weight:700">▲</span> Toyota Canada RAV4 plant · 7 units live · RaaS model</div>
+              <div class="card-note">First commercial humanoid deployment in Canadian automotive manufacturing.</div>
+            </div>
+            <div class="edit-card clear">
+              <div class="glow-dot" style="background:#22c55e;box-shadow:0 0 8px #22c55e"></div>
+              <div class="card-label">1X Technologies (NEO)</div>
+              <div class="card-value" style="color:#22c55e">$20K Preorder Open</div>
+              <div class="card-sub"><span style="color:#94a3b8;font-weight:700">=</span> World's first consumer humanoid · $499/mo sub · Deliveries 2026</div>
+              <div class="card-note">Preorders live. Consumer market for humanoids opens.</div>
+            </div></div>
+      <div class="action-bar"><strong>Action:</strong> Sector confirmed commercial — not hype. Agility and Boston Dynamics shipping. VC up 300% YoY. Hold listed proxies (NVDA, Tesla, robotics ETFs). Watch Figure AI IPO as next catalyst.</div>
+      <div class="section-header">
+        <span class="section-num">04</span>
+        <h2>Energy & Materials</h2>
+        <span class="verdict-inline" style="background:rgba(0,0,0,0.3);color:#f59e0b;border:1px solid #f59e0b">CAUTION</span>
+        <span style="font-size:11px;color:#8892a4;margin-left:auto">Weekly editorial · Updated 20 Mar 2026</span>
+      </div>
+      <div class="cards-grid">
+            <div class="edit-card clear">
+              <div class="glow-dot" style="background:#22c55e;box-shadow:0 0 8px #22c55e"></div>
+              <div class="card-label">NextEra Energy (NEE)</div>
+              <div class="card-value" style="color:#22c55e">3 GW Nuclear Deal</div>
+              <div class="card-sub"><span style="color:#22c55e;font-weight:700">▲</span> Duane Arnold restart w/ Google (25yr PPA) · 20 GW DC pipeline</div>
+              <div class="card-note">Half of 20 GW data centre pipeline in advanced discussions. Online 2028+.</div>
+            </div>
+            <div class="edit-card clear">
+              <div class="glow-dot" style="background:#22c55e;box-shadow:0 0 8px #22c55e"></div>
+              <div class="card-label">Bloom Energy (BE)</div>
+              <div class="card-value" style="color:#22c55e">~$158–159 (+80% YTD)</div>
+              <div class="card-sub"><span style="color:#22c55e;font-weight:700">▲</span> $5B Brookfield deal · $6B backlog (+140% YoY)</div>
+              <div class="card-note">Revenue guidance $3.1–3.3B. Q4 revenue $777M (+36% YoY). Stretched — hold, don't add.</div>
+            </div>
+            <div class="edit-card caution">
+              <div class="glow-dot" style="background:#f59e0b;box-shadow:0 0 8px #f59e0b"></div>
+              <div class="card-label">Lithium</div>
+              <div class="card-value" style="color:#f59e0b">Recovery Phase</div>
+              <div class="card-sub"><span style="color:#22c55e;font-weight:700">▲</span> Down 80% from peak · Demand +30% 2024 · 16% growth fcst 2026</div>
+              <div class="card-note">Supply adequate near-term; deficits expected medium-term. Accumulate on dips.</div>
+            </div>
+            <div class="edit-card caution">
+              <div class="glow-dot" style="background:#f59e0b;box-shadow:0 0 8px #f59e0b"></div>
+              <div class="card-label">Copper</div>
+              <div class="card-value" style="color:#f59e0b">30% Shortfall Ahead</div>
+              <div class="card-sub"><span style="color:#22c55e;font-weight:700">▲</span> Declining ore grades + extended dev timelines</div>
+              <div class="card-note">Structural multi-decade deficit. Long copper = long electrification.</div>
+            </div>
+            <div class="edit-card danger">
+              <div class="glow-dot" style="background:#ff4444;box-shadow:0 0 8px #ff4444"></div>
+              <div class="card-label">Rare Earths</div>
+              <div class="card-value" style="color:#ff4444">86% China-Controlled</div>
+              <div class="card-sub"><span style="color:#94a3b8;font-weight:700">=</span> Top 3 regions control 86% refining (up from 82% in 2020)</div>
+              <div class="card-note">AU–US framework directly targeting this. Strategic not financial play near-term.</div>
+            </div></div>
+      <div class="action-bar"><strong>Action:</strong> Oil $119+ is the macro wildcard — complicates Fed pivot and crypto/equities. Hold NEE and BE (structural demand locked in). Lithium/copper: accumulate on any macro selloff, not now. Rare earths: watch NRF government plays.</div>
+      <div class="section-header">
+        <span class="section-num">05</span>
+        <h2>Australia</h2>
+        <span class="verdict-inline" style="background:rgba(0,0,0,0.3);color:#f59e0b;border:1px solid #f59e0b">CAUTION</span>
+        <span style="font-size:11px;color:#8892a4;margin-left:auto">Weekly editorial · Updated 20 Mar 2026</span>
+      </div>
+      <div class="cards-grid">
+            <div class="edit-card caution">
+              <div class="glow-dot" style="background:#f59e0b;box-shadow:0 0 8px #f59e0b"></div>
+              <div class="card-label">Sydney (Houses)</div>
+              <div class="card-value" style="color:#f59e0b">$1,607,046</div>
+              <div class="card-sub"><span style="color:#94a3b8;font-weight:700">=</span> Flat MoM · -0.1% qtr · +31% 5yr</div>
+              <div class="card-note">Cycle peak forming. RBA hiking into stagnant prices = squeeze.</div>
+            </div>
+            <div class="edit-card caution">
+              <div class="glow-dot" style="background:#f59e0b;box-shadow:0 0 8px #f59e0b"></div>
+              <div class="card-label">Melbourne (Houses)</div>
+              <div class="card-value" style="color:#f59e0b">$977,579</div>
+              <div class="card-sub"><span style="color:#ff4444;font-weight:700">▼</span> ▼ Slipping · -0.4% qtr · +11.8% 5yr</div>
+              <div class="card-note">Underperformer for 3 years. Affordability better but demand weak.</div>
+            </div>
+            <div class="edit-card caution">
+              <div class="glow-dot" style="background:#f59e0b;box-shadow:0 0 8px #f59e0b"></div>
+              <div class="card-label">Brisbane (Houses)</div>
+              <div class="card-value" style="color:#f59e0b">$1,175,981</div>
+              <div class="card-sub"><span style="color:#22c55e;font-weight:700">▲</span> +1.6% MoM · +86% 5yr · Still running</div>
+              <div class="card-note">Strongest major capital. But cycle peak approaching — window closing.</div>
+            </div>
+            <div class="edit-card danger">
+              <div class="glow-dot" style="background:#ff4444;box-shadow:0 0 8px #ff4444"></div>
+              <div class="card-label">RBA Cash Rate</div>
+              <div class="card-value" style="color:#ff4444">4.10% (+25 bps)</div>
+              <div class="card-sub"><span style="color:#22c55e;font-weight:700">▲</span> Split vote 5-4 · May hike to 4.35% likely</div>
+              <div class="card-note">CPI 3.8%. Housing +6.8%, electricity +32.2% (rebates exhausted).</div>
+            </div>
+            <div class="edit-card clear">
+              <div class="glow-dot" style="background:#22c55e;box-shadow:0 0 8px #22c55e"></div>
+              <div class="card-label">AU–US Critical Minerals</div>
+              <div class="card-value" style="color:#22c55e">$8.5B Pipeline</div>
+              <div class="card-sub"><span style="color:#22c55e;font-weight:700">▲</span> Bilateral framework signed · $1B each committed</div>
+              <div class="card-note">Rare earths + critical minerals. Biggest bilateral deal in sector.</div>
+            </div>
+            <div class="edit-card caution">
+              <div class="glow-dot" style="background:#f59e0b;box-shadow:0 0 8px #f59e0b"></div>
+              <div class="card-label">National Reconstruction Fund</div>
+              <div class="card-value" style="color:#f59e0b">$15B Fund · $1B Minerals</div>
+              <div class="card-sub"><span style="color:#94a3b8;font-weight:700">=</span> Equity stake in Liontown (lithium) Aug 2025</div>
+              <div class="card-note">Deployment still slow. Watch for further equity investments Q2 2026.</div>
+            </div></div>
+      <div class="action-bar"><strong>Action:</strong> Sydney/Melbourne at/near cycle peak with RBA still hiking — worst combo for leveraged property. Brisbane/Adelaide/Perth still have momentum but window closing. Critical minerals bilateral deals are a multi-year tailwind.</div>
+
+  <!-- SUMMARY TABLE -->
+  <div class="summary-table">
+    <table>
+      <thead><tr><th>Section</th><th>Status</th><th>Key Number</th><th>Direction</th><th>Action</th></tr></thead>
+      <tbody><tr><td><strong>1. Market Health</strong></td><td><span class="verdict-inline" style="background:rgba(0,0,0,.3);color:#ff4444;border:1px solid #ff4444">DANGER</span></td><td>CAPE 38–39 · HY 470 bps · Pvt credit 9.2%</td><td>▼ Deteriorating</td><td>Cash only. No long equity.</td></tr><tr><td><strong>2. Key People</strong></td><td><span class="verdict-inline" style="background:rgba(0,0,0,.3);color:#ff4444;border:1px solid #ff4444">DANGER</span></td><td>All 3 cycle theorists: 2026 peak</td><td>= Converging</td><td>No RE or equity additions.</td></tr><tr><td><strong>3. AI Robotics</strong></td><td><span class="verdict-inline" style="background:rgba(0,0,0,.3);color:#22c55e;border:1px solid #22c55e">ACCELERATING</span></td><td>Figure $39B · Apptronik $5.5B · Agility commercial</td><td>▲ Compounding</td><td>Hold listed proxies.</td></tr><tr><td><strong>4. Energy & Materials</strong></td><td><span class="verdict-inline" style="background:rgba(0,0,0,.3);color:#f59e0b;border:1px solid #f59e0b">CAUTION</span></td><td>Oil $119 · BE +80% YTD · NEE 3GW deal</td><td>▲ Volatile</td><td>Hold NEE/BE. Watch oil.</td></tr><tr><td><strong>5. Australia</strong></td><td><span class="verdict-inline" style="background:rgba(0,0,0,.3);color:#f59e0b;border:1px solid #f59e0b">CAUTION</span></td><td>RBA 4.10% · Sydney flat · $8.5B minerals deal</td><td>= Diverging</td><td>No new RE. Watch NRF.</td></tr><tr><td><strong>6. Crypto</strong></td><td><span class="verdict-inline" style="background:rgba(0,0,0,.3);color:#ff4444;border:1px solid #ff4444">FEAR</span></td><td>See live data above · F&G 26 · FOMC headwinds</td><td>▼ Weak</td><td>Wait. BTC $65K = starter signal.</td></tr></tbody>
+    </table>
+  </div>
+
+  <footer>
+    Market data: Yahoo Finance · CoinGecko · FRED (St. Louis Fed) · Alternative.me &nbsp;|&nbsp; Editorial: weekly research by Claude &nbsp;|&nbsp; Auto-refreshes daily via GitHub Actions &nbsp;|&nbsp; Not financial advice.
+  </footer>
+
+</div>
+</body>
+</html>

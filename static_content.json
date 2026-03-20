@@ -1,0 +1,305 @@
+{
+  "briefing_date": "20 Mar 2026",
+  "master_verdict": "DANGER",
+  "master_summary": "Multiple red flags: credit gates, cycle peak, valuations extreme",
+
+  "checklist": [
+    {"state": "open",    "text": "Buffett Indicator < 160% (currently 213–217%)"},
+    {"state": "open",    "text": "CAPE < 25 (currently ~38–39)"},
+    {"state": "open",    "text": "HY spreads < 350 bps (currently ~470 bps)"},
+    {"state": "open",    "text": "IG spreads < 80 bps (currently ~120 bps)"},
+    {"state": "open",    "text": "Private credit gates lifted / default rate < 5%"},
+    {"state": "partial", "text": "Phil Anderson: post-2026 peak confirmed + 6–12 months"},
+    {"state": "partial", "text": "RBA pivot to cuts (currently hiking — rate at 4.10%)"},
+    {"state": "open",    "text": "S&P 500 golden cross restored (50d back above 200d)"},
+    {"state": "open",    "text": "BTC Fear & Greed back above 60 (see live data above)"},
+    {"state": "done",    "text": "AI robotics commercial deployment confirmed (Agility/BD shipping)"},
+    {"state": "done",    "text": "AU–US critical minerals framework signed ($8.5B pipeline)"},
+    {"state": "partial", "text": "Oil back below $90 (currently $119+ — Hormuz crisis)"}
+  ],
+
+  "crypto_action": "No new positions until F&G recovers above 50 or oil drops below $90. BTC $65K = starter entry signal. ETH, XRP, SOL — stand aside.",
+
+  "crypto_signals": {
+    "BTC": "Held $69K post-FOMC sell-off. Watch $65K support.",
+    "ETH": "Underperforming BTC. ETF inflows stalled. Needs macro catalyst.",
+    "XRP": "SEC clarity long priced in. No fresh catalyst.",
+    "SOL": "Meme volume collapsed. High beta = high pain in risk-off."
+  },
+
+  "sections": [
+    {
+      "num": "01",
+      "title": "Market Health",
+      "verdict": "DANGER",
+      "action": "Stay defensive. No new long equity positions. Cash and short-duration bonds only. Private credit gates are the new canary — this isn't valuation noise anymore.",
+      "items": [
+        {
+          "label": "Buffett Indicator",
+          "value": "213–217%",
+          "sub": "64% above trend · 2σ overvalued vs 200% threshold",
+          "note": "Long-term fair value ~120%. Only 3rd time in 60 years at this level.",
+          "status": "danger",
+          "delta": "up"
+        },
+        {
+          "label": "Shiller CAPE Ratio",
+          "value": "~38–39",
+          "sub": "Long-term average ~17 · Dot-com was 44",
+          "note": "Only two times in history above 40 — the other was dot-com peak.",
+          "status": "danger",
+          "delta": "flat"
+        },
+        {
+          "label": "Private Credit Stress",
+          "value": "9.2% Default Rate",
+          "sub": "Blackstone BCRED gated · BlackRock HPS limited",
+          "note": "$265B exposure. Redemption queues 3–5 quarters. Record high default rate.",
+          "status": "danger",
+          "delta": "up"
+        },
+        {
+          "label": "Berkshire / Abel",
+          "value": "$381.7B Cash",
+          "sub": "Greg Abel CEO Jan 2026 · Cut Apple to $60B · Sold BofA",
+          "note": "Largest cash hoard ever. Loudest possible wait signal.",
+          "status": "caution",
+          "delta": "up"
+        },
+        {
+          "label": "Ray Dalio / Bridgewater",
+          "value": "Pre-1945 Signal",
+          "sub": "Fortune interview Mar 16 · Stage 5 Big Cycle · Capital wars",
+          "note": "AI boom 'more dangerous' phase. AIA Labs hit $5B AUM.",
+          "status": "caution",
+          "delta": "flat"
+        },
+        {
+          "label": "Howard Marks / Oaktree",
+          "value": "'Level 3' AI Risk",
+          "sub": "Bloomberg Mar 17–18 · 'Is It a Bubble?' memo",
+          "note": "Now sees AI as full labour replacement. 'Shaken' by implications. New memo weeks away.",
+          "status": "caution",
+          "delta": "up"
+        },
+        {
+          "label": "Jeremy Grantham / GMO",
+          "value": "Severe Decline Ahead",
+          "sub": "U.S. equities 2σ above real price trend",
+          "note": "AI bubble = great tech → great bubble pattern. Profit plunge forecast.",
+          "status": "danger",
+          "delta": "flat"
+        }
+      ]
+    },
+    {
+      "num": "02",
+      "title": "Key People — Cycle Theorists",
+      "verdict": "DANGER",
+      "action": "All three land cycle theorists in unison on 2026 peak. No new Australian or US real estate positions. Watch Harrison's 'food vs mortgage' indicator — residential mortgage default spike = cycle confirmation.",
+      "items": [
+        {
+          "label": "Phil Anderson",
+          "value": "2026 = Cycle Peak",
+          "sub": "Winner's Curse phase · Cycle 2012–2026–2031",
+          "note": "Housing stocks rolling over, BTC speculation, banking deregulation — all classic peak signals.",
+          "status": "danger",
+          "delta": "flat"
+        },
+        {
+          "label": "Fred Harrison",
+          "value": "Late 2026 Turning Point",
+          "sub": "Doubled down · Land prices = engine",
+          "note": "Binary choice approaching: mortgage vs food. When supermarket wins → market collapses.",
+          "status": "danger",
+          "delta": "flat"
+        },
+        {
+          "label": "Akhil Patel",
+          "value": "Final Upswing Peaking",
+          "sub": "Mid-cycle dip exited · 2026 peak confirmed",
+          "note": "Three independent signals from three theorists — same endpoint.",
+          "status": "danger",
+          "delta": "flat"
+        },
+        {
+          "label": "Jeremy Grantham",
+          "value": "AI Bubble Warning",
+          "sub": "Feb/Mar 2026 · Conviction unchanged",
+          "note": "Great innovations → great bubbles. AI deflation = profit plunge + valuation decline.",
+          "status": "danger",
+          "delta": "flat"
+        }
+      ]
+    },
+    {
+      "num": "03",
+      "title": "AI Robotics",
+      "verdict": "ACCELERATING",
+      "action": "Sector confirmed commercial — not hype. Agility and Boston Dynamics shipping. VC up 300% YoY. Hold listed proxies (NVDA, Tesla, robotics ETFs). Watch Figure AI IPO as next catalyst.",
+      "items": [
+        {
+          "label": "Tesla Optimus",
+          "value": "Gen 3 Hands Live",
+          "sub": "50 actuators/hand · Factory testing Fremont & Austin",
+          "note": "V3 production summer 2026. External sales late 2026. 'Digital Optimus' (Tesla×xAI) announced Mar 11.",
+          "status": "clear",
+          "delta": "up"
+        },
+        {
+          "label": "Figure AI",
+          "value": "$39B Valuation",
+          "sub": "$1B+ Series C · Led by Nvidia",
+          "note": "Largest humanoid raise to date. Nvidia backing = inference-at-edge signal.",
+          "status": "clear",
+          "delta": "up"
+        },
+        {
+          "label": "Apptronik",
+          "value": "$5.5B · $935M raised",
+          "sub": "$520M extension Feb 2026 · 3× valuation in 12 months",
+          "note": "Apollo deployed at Mercedes & GXO. Investors: John Deere, Qatar Investment Authority, AT&T Ventures.",
+          "status": "clear",
+          "delta": "up"
+        },
+        {
+          "label": "Boston Dynamics Atlas",
+          "value": "Production 2026",
+          "sub": "Electric Atlas unveiled CES 2026 · DeepMind partnership",
+          "note": "First units to Hyundai RMAC + Google DeepMind. Customer deployments 2027.",
+          "status": "clear",
+          "delta": "up"
+        },
+        {
+          "label": "Agility Robotics (Digit)",
+          "value": "1st Automotive Deploy",
+          "sub": "Toyota Canada RAV4 plant · 7 units live · RaaS model",
+          "note": "First commercial humanoid deployment in Canadian automotive manufacturing.",
+          "status": "clear",
+          "delta": "up"
+        },
+        {
+          "label": "1X Technologies (NEO)",
+          "value": "$20K Preorder Open",
+          "sub": "World's first consumer humanoid · $499/mo sub · Deliveries 2026",
+          "note": "Preorders live. Consumer market for humanoids opens.",
+          "status": "clear",
+          "delta": "flat"
+        }
+      ]
+    },
+    {
+      "num": "04",
+      "title": "Energy & Materials",
+      "verdict": "CAUTION",
+      "action": "Oil $119+ is the macro wildcard — complicates Fed pivot and crypto/equities. Hold NEE and BE (structural demand locked in). Lithium/copper: accumulate on any macro selloff, not now. Rare earths: watch NRF government plays.",
+      "items": [
+        {
+          "label": "NextEra Energy (NEE)",
+          "value": "3 GW Nuclear Deal",
+          "sub": "Duane Arnold restart w/ Google (25yr PPA) · 20 GW DC pipeline",
+          "note": "Half of 20 GW data centre pipeline in advanced discussions. Online 2028+.",
+          "status": "clear",
+          "delta": "up"
+        },
+        {
+          "label": "Bloom Energy (BE)",
+          "value": "~$158–159 (+80% YTD)",
+          "sub": "$5B Brookfield deal · $6B backlog (+140% YoY)",
+          "note": "Revenue guidance $3.1–3.3B. Q4 revenue $777M (+36% YoY). Stretched — hold, don't add.",
+          "status": "clear",
+          "delta": "up"
+        },
+        {
+          "label": "Lithium",
+          "value": "Recovery Phase",
+          "sub": "Down 80% from peak · Demand +30% 2024 · 16% growth fcst 2026",
+          "note": "Supply adequate near-term; deficits expected medium-term. Accumulate on dips.",
+          "status": "caution",
+          "delta": "up"
+        },
+        {
+          "label": "Copper",
+          "value": "30% Shortfall Ahead",
+          "sub": "Declining ore grades + extended dev timelines",
+          "note": "Structural multi-decade deficit. Long copper = long electrification.",
+          "status": "caution",
+          "delta": "up"
+        },
+        {
+          "label": "Rare Earths",
+          "value": "86% China-Controlled",
+          "sub": "Top 3 regions control 86% refining (up from 82% in 2020)",
+          "note": "AU–US framework directly targeting this. Strategic not financial play near-term.",
+          "status": "danger",
+          "delta": "flat"
+        }
+      ]
+    },
+    {
+      "num": "05",
+      "title": "Australia",
+      "verdict": "CAUTION",
+      "action": "Sydney/Melbourne at/near cycle peak with RBA still hiking — worst combo for leveraged property. Brisbane/Adelaide/Perth still have momentum but window closing. Critical minerals bilateral deals are a multi-year tailwind.",
+      "items": [
+        {
+          "label": "Sydney (Houses)",
+          "value": "$1,607,046",
+          "sub": "Flat MoM · -0.1% qtr · +31% 5yr",
+          "note": "Cycle peak forming. RBA hiking into stagnant prices = squeeze.",
+          "status": "caution",
+          "delta": "flat"
+        },
+        {
+          "label": "Melbourne (Houses)",
+          "value": "$977,579",
+          "sub": "▼ Slipping · -0.4% qtr · +11.8% 5yr",
+          "note": "Underperformer for 3 years. Affordability better but demand weak.",
+          "status": "caution",
+          "delta": "down"
+        },
+        {
+          "label": "Brisbane (Houses)",
+          "value": "$1,175,981",
+          "sub": "+1.6% MoM · +86% 5yr · Still running",
+          "note": "Strongest major capital. But cycle peak approaching — window closing.",
+          "status": "caution",
+          "delta": "up"
+        },
+        {
+          "label": "RBA Cash Rate",
+          "value": "4.10% (+25 bps)",
+          "sub": "Split vote 5-4 · May hike to 4.35% likely",
+          "note": "CPI 3.8%. Housing +6.8%, electricity +32.2% (rebates exhausted).",
+          "status": "danger",
+          "delta": "up"
+        },
+        {
+          "label": "AU–US Critical Minerals",
+          "value": "$8.5B Pipeline",
+          "sub": "Bilateral framework signed · $1B each committed",
+          "note": "Rare earths + critical minerals. Biggest bilateral deal in sector.",
+          "status": "clear",
+          "delta": "up"
+        },
+        {
+          "label": "National Reconstruction Fund",
+          "value": "$15B Fund · $1B Minerals",
+          "sub": "Equity stake in Liontown (lithium) Aug 2025",
+          "note": "Deployment still slow. Watch for further equity investments Q2 2026.",
+          "status": "caution",
+          "delta": "flat"
+        }
+      ]
+    }
+  ],
+
+  "summary_rows": [
+    {"section": "1. Market Health",     "status": "DANGER",       "key": "CAPE 38–39 · HY 470 bps · Pvt credit 9.2%",      "direction": "▼ Deteriorating", "action": "Cash only. No long equity."},
+    {"section": "2. Key People",        "status": "DANGER",       "key": "All 3 cycle theorists: 2026 peak",                  "direction": "= Converging",     "action": "No RE or equity additions."},
+    {"section": "3. AI Robotics",       "status": "ACCELERATING", "key": "Figure $39B · Apptronik $5.5B · Agility commercial","direction": "▲ Compounding",    "action": "Hold listed proxies."},
+    {"section": "4. Energy & Materials","status": "CAUTION",       "key": "Oil $119 · BE +80% YTD · NEE 3GW deal",            "direction": "▲ Volatile",       "action": "Hold NEE/BE. Watch oil."},
+    {"section": "5. Australia",         "status": "CAUTION",       "key": "RBA 4.10% · Sydney flat · $8.5B minerals deal",    "direction": "= Diverging",      "action": "No new RE. Watch NRF."},
+    {"section": "6. Crypto",            "status": "FEAR",          "key": "See live data above · F&G 26 · FOMC headwinds",    "direction": "▼ Weak",           "action": "Wait. BTC $65K = starter signal."}
+  ]
+}
