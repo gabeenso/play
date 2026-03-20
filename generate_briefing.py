@@ -12,14 +12,7 @@ import sys
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
-# Yahoo Finance direct API headers (more reliable than yfinance)
-YF_HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-    "Accept": "application/json,text/plain,*/*",
-    "Accept-Language": "en-US,en;q=0.9",
-    "Origin": "https://finance.yahoo.com",
-    "Referer": "https://finance.yahoo.com/",
-}
+HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; IntelBriefing/1.0)"}
 
 # ─── LIVE DATA FETCHERS ────────────────────────────────────────
 
@@ -79,64 +72,72 @@ def fetch_fear_greed():
         return {"value": 0, "label": "Unknown"}
 
 
-def fetch_yahoo_quote(symbol):
-    """Fetch a single quote from Yahoo Finance v8 API directly."""
+def fetch_stooq(symbol, days=5):
+    """Fetch closing prices from Stooq — free, no key, no blocks."""
     try:
-        url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval=1d&range=5d"
-        r = requests.get(url, headers=YF_HEADERS, timeout=12)
+        from datetime import date, timedelta
+        end   = date.today().strftime("%Y%m%d")
+        start = (date.today() - timedelta(days=days*2 + 10)).strftime("%Y%m%d")
+        url = f"https://stooq.com/q/d/l/?s={symbol}&d1={start}&d2={end}&i=d"
+        r = requests.get(url, headers=HEADERS, timeout=12)
         r.raise_for_status()
-        data = r.json()
-        closes = data["chart"]["result"][0]["indicators"]["quote"][0]["close"]
-        closes = [c for c in closes if c is not None]
-        if len(closes) < 2:
+        lines = [l for l in r.text.strip().split("\n") if l and not l.startswith("Date")]
+        if len(lines) < 2:
             return None
-        latest = round(closes[-1], 4)
-        prev   = closes[-2]
-        change = round((latest - prev) / prev * 100, 2)
-        return {"price": latest, "change_pct": change}
+        def parse_close(row):
+            parts = row.split(",")
+            return float(parts[4]) if len(parts) >= 5 else None
+        latest = parse_close(lines[-1])
+        prev   = parse_close(lines[-2])
+        if not latest or not prev:
+            return None
+        return {"price": round(latest, 4), "change_pct": round((latest - prev) / prev * 100, 2), "all": lines}
     except Exception as e:
-        print(f"[WARN] Yahoo quote {symbol} failed: {e}")
+        print(f"[WARN] Stooq {symbol} failed: {e}")
         return None
 
 
 def fetch_market_indices():
-    """Yahoo Finance direct API — no library required."""
+    """Stooq — free market data, no API key, reliable from GitHub Actions."""
     tickers = {
-        "SPX":    "^GSPC",
-        "VIX":    "^VIX",
-        "OIL":    "CL=F",
-        "GOLD":   "GC=F",
-        "AUDUSD": "AUDUSD=X",
-        "TNX":    "^TNX",
+        "SPX":    "^spx",
+        "VIX":    "^vix",
+        "OIL":    "cl.f",
+        "GOLD":   "xauusd",
+        "AUDUSD": "audusd",
+        "TNX":    "10ust.b",
     }
     results = {}
     for name, sym in tickers.items():
-        q = fetch_yahoo_quote(sym)
-        results[name] = q if q else {"price": None, "change_pct": None}
+        q = fetch_stooq(sym)
+        results[name] = {"price": q["price"], "change_pct": q["change_pct"]} if q else {"price": None, "change_pct": None}
     return results
 
 
 def fetch_sp500_ma():
-    """Check S&P 500 50d vs 200d moving average (death cross detector)."""
+    """S&P 500 50d vs 200d MA via Stooq — death cross detector."""
     try:
-        url = "https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?interval=1d&range=1y"
-        r = requests.get(url, headers=YF_HEADERS, timeout=15)
+        from datetime import date, timedelta
+        end   = date.today().strftime("%Y%m%d")
+        start = (date.today() - timedelta(days=300)).strftime("%Y%m%d")
+        url   = f"https://stooq.com/q/d/l/?s=^spx&d1={start}&d2={end}&i=d"
+        r = requests.get(url, headers=HEADERS, timeout=15)
         r.raise_for_status()
-        data  = r.json()
-        closes = data["chart"]["result"][0]["indicators"]["quote"][0]["close"]
-        closes = [c for c in closes if c is not None]
+        lines = [l for l in r.text.strip().split("\n") if l and not l.startswith("Date")]
+        closes = []
+        for l in lines:
+            parts = l.split(",")
+            try:
+                closes.append(float(parts[4]))
+            except:
+                pass
         if len(closes) < 200:
             return {"ma50": None, "ma200": None, "death_cross": None}
-        import statistics
         ma50  = round(sum(closes[-50:])  / 50,  0)
         ma200 = round(sum(closes[-200:]) / 200, 0)
-        return {
-            "ma50":        ma50,
-            "ma200":       ma200,
-            "death_cross": ma50 < ma200,
-        }
+        return {"ma50": ma50, "ma200": ma200, "death_cross": ma50 < ma200}
     except Exception as e:
-        print(f"[WARN] S&P MA fetch failed: {e}")
+        print(f"[WARN] S&P MA (Stooq) failed: {e}")
         return {"ma50": None, "ma200": None, "death_cross": None}
 
 
