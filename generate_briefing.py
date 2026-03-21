@@ -106,17 +106,19 @@ def fetch_market_indices():
         q = fetch_stooq(sym)
         results[name] = {"price": q["price"], "change_pct": q["change_pct"]} if q else {"price": None, "change_pct": None}
 
-    # FRED: VIX, Oil, Gold, 10Y Treasury (all have FRED series, reliable)
+    # FRED: VIX, Oil, Gold, 10Y — with delays to avoid rate limiting
+    import time
     fred_tickers = {
-        "VIX":  "VIXCLS",          # CBOE VIX daily
-        "OIL":  "DCOILWTICO",      # WTI crude daily
-        "GOLD": "GOLDAMGBD228NLBM",# London gold fix USD/troy oz
-        "TNX":  "DGS10",           # 10Y Treasury yield
+        "VIX":  "VIXCLS",
+        "OIL":  "DCOILWTICO",
+        "GOLD": "GOLDAMGBD228NLBM",
+        "TNX":  "DGS10",
     }
+    time.sleep(3)  # let credit spread requests clear before hitting FRED again
     for name, sid in fred_tickers.items():
         try:
             url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={sid}"
-            r = requests.get(url, headers=HEADERS, timeout=12)
+            r = requests.get(url, headers=HEADERS, timeout=25)
             r.raise_for_status()
             lines = [l for l in r.text.strip().split("\n") if l and not l.startswith("DATE")]
             valid = []
@@ -134,6 +136,7 @@ def fetch_market_indices():
         except Exception as e:
             print(f"[WARN] FRED {sid} failed: {e}")
             results[name] = {"price": None, "change_pct": None}
+        time.sleep(2)  # 2s between each FRED call
 
     return results
 
@@ -171,11 +174,12 @@ def fetch_credit_spreads():
         "hy_spread": "BAMLH0A0HYM2",   # ICE BofA US High Yield OAS
         "ig_spread": "BAMLC0A4CBBB",   # ICE BofA BBB Corp OAS
     }
+    import time
     results = {}
     for name, sid in series.items():
         try:
             url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={sid}"
-            r = requests.get(url, timeout=15)
+            r = requests.get(url, headers=HEADERS, timeout=25)
             r.raise_for_status()
             lines = [l for l in r.text.strip().split("\n") if l and not l.startswith("DATE")]
             # Get last two valid rows
@@ -200,6 +204,7 @@ def fetch_credit_spreads():
         except Exception as e:
             print(f"[WARN] FRED {sid} failed: {e}")
             results[name] = {"value": None, "prev": None, "date": None, "change_bps": None}
+        time.sleep(2)
     return results
 
 
