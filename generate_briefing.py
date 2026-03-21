@@ -98,19 +98,43 @@ def fetch_stooq(symbol, days=5):
 
 
 def fetch_market_indices():
-    """Stooq — free market data, no API key, reliable from GitHub Actions."""
-    tickers = {
-        "SPX":    "^spx",
-        "VIX":    "^vix.cboe",
-        "OIL":    "cl.f",
-        "GOLD":   "xauusd",
-        "AUDUSD": "audusd",
-        "TNX":    "10us.b",
-    }
+    """Stooq for SPX + AUD/USD. FRED for VIX, Oil, Gold, 10Y (more reliable)."""
+    # Stooq: indices and forex
+    stooq_tickers = {"SPX": "^spx", "AUDUSD": "audusd"}
     results = {}
-    for name, sym in tickers.items():
+    for name, sym in stooq_tickers.items():
         q = fetch_stooq(sym)
         results[name] = {"price": q["price"], "change_pct": q["change_pct"]} if q else {"price": None, "change_pct": None}
+
+    # FRED: VIX, Oil, Gold, 10Y Treasury (all have FRED series, reliable)
+    fred_tickers = {
+        "VIX":  "VIXCLS",          # CBOE VIX daily
+        "OIL":  "DCOILWTICO",      # WTI crude daily
+        "GOLD": "GOLDAMGBD228NLBM",# London gold fix USD/troy oz
+        "TNX":  "DGS10",           # 10Y Treasury yield
+    }
+    for name, sid in fred_tickers.items():
+        try:
+            url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={sid}"
+            r = requests.get(url, headers=HEADERS, timeout=12)
+            r.raise_for_status()
+            lines = [l for l in r.text.strip().split("\n") if l and not l.startswith("DATE")]
+            valid = []
+            for line in reversed(lines):
+                parts = line.split(",")
+                if len(parts) == 2 and parts[1].strip() not in (".", ""):
+                    valid.append(float(parts[1].strip()))
+                if len(valid) == 2:
+                    break
+            if len(valid) >= 2:
+                latest, prev = valid[0], valid[1]
+                results[name] = {"price": round(latest, 4), "change_pct": round((latest - prev) / prev * 100, 2)}
+            else:
+                results[name] = {"price": None, "change_pct": None}
+        except Exception as e:
+            print(f"[WARN] FRED {sid} failed: {e}")
+            results[name] = {"price": None, "change_pct": None}
+
     return results
 
 
