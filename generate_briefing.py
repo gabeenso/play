@@ -101,11 +101,11 @@ def fetch_market_indices():
     """Stooq — free market data, no API key, reliable from GitHub Actions."""
     tickers = {
         "SPX":    "^spx",
-        "VIX":    "^vix",
+        "VIX":    "^vix.cboe",
         "OIL":    "cl.f",
         "GOLD":   "xauusd",
         "AUDUSD": "audusd",
-        "TNX":    "10ust.b",
+        "TNX":    "10us.b",
     }
     results = {}
     for name, sym in tickers.items():
