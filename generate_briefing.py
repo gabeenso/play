@@ -109,7 +109,7 @@ def fetch_market_indices():
 
     # FRED API: VIX, Oil, Gold, 10Y — authenticated, no rate limiting
     for name, sid in [("VIX","VIXCLS"), ("OIL","DCOILWTICO"),
-                      ("GOLD","GOLDAMGBD228NLBM"), ("TNX","DGS10")]:
+                      ("TNX","DGS10")]:
         row = fred_fetch(sid)
         if row:
             _, latest, prev = row
@@ -125,9 +125,9 @@ def fetch_sp500_ma():
     try:
         from datetime import date, timedelta
         end   = date.today().strftime("%Y%m%d")
-        start = (date.today() - timedelta(days=300)).strftime("%Y%m%d")
+        start = (date.today() - timedelta(days=260)).strftime("%Y%m%d")
         url   = f"https://stooq.com/q/d/l/?s=^spx&d1={start}&d2={end}&i=d"
-        r = requests.get(url, headers=HEADERS, timeout=15)
+        r = requests.get(url, headers=HEADERS, timeout=8)
         r.raise_for_status()
         lines = [l for l in r.text.strip().split("\n") if l and not l.startswith("Date")]
         closes = []
@@ -155,7 +155,7 @@ def fred_fetch(sid, multiplier=1.0):
             f"?series_id={sid}&api_key={FRED_API_KEY}"
             f"&file_type=json&sort_order=desc&limit=10"
         )
-        r = requests.get(url, headers=HEADERS, timeout=20)
+        r = requests.get(url, headers=HEADERS, timeout=8)
         r.raise_for_status()
         obs = [o for o in r.json()["observations"] if o["value"] != "."]
         if len(obs) < 2:
