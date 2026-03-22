@@ -35,6 +35,7 @@ jobs:
         run: python generate_briefing.py
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          TWELVE_DATA_API_KEY: ${{ secrets.TWELVE_DATA_API_KEY }}
 
       - name: Commit and push if changed
         run: |

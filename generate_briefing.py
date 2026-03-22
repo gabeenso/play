@@ -14,6 +14,7 @@ from pathlib import Path
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; IntelBriefing/1.0)"}
 FRED_API_KEY = os.environ.get("FRED_API_KEY", "")
+TWELVE_API_KEY = os.environ.get("TWELVE_DATA_API_KEY", "")
 
 # ─── LIVE DATA FETCHERS ────────────────────────────────────────
 
@@ -99,24 +100,34 @@ def fetch_stooq(symbol, days=5):
 
 
 def fetch_market_indices():
-    """Stooq for SPX + AUD/USD. FRED for VIX, Oil, Gold, 10Y (more reliable)."""
-    # Stooq: indices and forex
-    stooq_tickers = {"SPX": "^spx", "AUDUSD": "audusd", "GOLD": "gc.f"}
-    results = {}
-    for name, sym in stooq_tickers.items():
-        q = fetch_stooq(sym)
-        results[name] = {"price": q["price"], "change_pct": q["change_pct"]} if q else {"price": None, "change_pct": None}
-
-    # FRED API: VIX, Oil, Gold, 10Y — authenticated, no rate limiting
-    for name, sid in [("VIX","VIXCLS"), ("OIL","DCOILWTICO"),
-                      ("TNX","DGS10")]:
-        row = fred_fetch(sid)
-        if row:
-            _, latest, prev = row
-            results[name] = {"price": latest, "change_pct": round((latest - prev) / prev * 100, 2)}
-        else:
-            results[name] = {"price": None, "change_pct": None}
-
+    """Twelve Data batch API — one call, all 6 metrics, no rate limiting."""
+    # Map our internal names to Twelve Data symbols
+    symbols = {
+        "SPX":    "SPX",
+        "VIX":    "VIX",
+        "OIL":    "WTI",
+        "GOLD":   "XAU/USD",
+        "AUDUSD": "AUD/USD",
+        "TNX":    "TNX",
+    }
+    results = {k: {"price": None, "change_pct": None} for k in symbols}
+    try:
+        sym_str = ",".join(symbols.values())
+        url = f"https://api.twelvedata.com/quote?symbol={sym_str}&apikey={TWELVE_API_KEY}"
+        r = requests.get(url, headers=HEADERS, timeout=12)
+        r.raise_for_status()
+        data = r.json()
+        for name, td_sym in symbols.items():
+            entry = data.get(td_sym, {})
+            if entry.get("status") == "error" or "close" not in entry:
+                print(f"[WARN] Twelve Data {td_sym}: {entry.get('message','no data')}")
+                continue
+            price  = float(entry["close"])
+            prev   = float(entry["previous_close"])
+            change = round((price - prev) / prev * 100, 2)
+            results[name] = {"price": round(price, 4), "change_pct": change}
+    except Exception as e:
+        print(f"[WARN] Twelve Data batch fetch failed: {e}")
     return results
 
 
