@@ -13,6 +13,7 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; IntelBriefing/1.0)"}
+FRED_API_KEY = os.environ.get("FRED_API_KEY", "")
 
 # ─── LIVE DATA FETCHERS ────────────────────────────────────────
 
@@ -106,37 +107,15 @@ def fetch_market_indices():
         q = fetch_stooq(sym)
         results[name] = {"price": q["price"], "change_pct": q["change_pct"]} if q else {"price": None, "change_pct": None}
 
-    # FRED: VIX, Oil, Gold, 10Y — with delays to avoid rate limiting
-    import time
-    fred_tickers = {
-        "VIX":  "VIXCLS",
-        "OIL":  "DCOILWTICO",
-        "GOLD": "GOLDAMGBD228NLBM",
-        "TNX":  "DGS10",
-    }
-    time.sleep(3)  # let credit spread requests clear before hitting FRED again
-    for name, sid in fred_tickers.items():
-        try:
-            url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={sid}"
-            r = requests.get(url, headers=HEADERS, timeout=25)
-            r.raise_for_status()
-            lines = [l for l in r.text.strip().split("\n") if l and not l.startswith("DATE")]
-            valid = []
-            for line in reversed(lines):
-                parts = line.split(",")
-                if len(parts) == 2 and parts[1].strip() not in (".", ""):
-                    valid.append(float(parts[1].strip()))
-                if len(valid) == 2:
-                    break
-            if len(valid) >= 2:
-                latest, prev = valid[0], valid[1]
-                results[name] = {"price": round(latest, 4), "change_pct": round((latest - prev) / prev * 100, 2)}
-            else:
-                results[name] = {"price": None, "change_pct": None}
-        except Exception as e:
-            print(f"[WARN] FRED {sid} failed: {e}")
+    # FRED API: VIX, Oil, Gold, 10Y — authenticated, no rate limiting
+    for name, sid in [("VIX","VIXCLS"), ("OIL","DCOILWTICO"),
+                      ("GOLD","GOLDAMGBD228NLBM"), ("TNX","DGS10")]:
+        row = fred_fetch(sid)
+        if row:
+            _, latest, prev = row
+            results[name] = {"price": latest, "change_pct": round((latest - prev) / prev * 100, 2)}
+        else:
             results[name] = {"price": None, "change_pct": None}
-        time.sleep(2)  # 2s between each FRED call
 
     return results
 
@@ -168,43 +147,38 @@ def fetch_sp500_ma():
         return {"ma50": None, "ma200": None, "death_cross": None}
 
 
+def fred_fetch(sid, multiplier=1.0):
+    """Fetch latest 2 observations from FRED API. Returns (latest_date, latest_val, prev_val) or None."""
+    try:
+        url = (
+            f"https://api.stlouisfed.org/fred/series/observations"
+            f"?series_id={sid}&api_key={FRED_API_KEY}"
+            f"&file_type=json&sort_order=desc&limit=10"
+        )
+        r = requests.get(url, headers=HEADERS, timeout=20)
+        r.raise_for_status()
+        obs = [o for o in r.json()["observations"] if o["value"] != "."]
+        if len(obs) < 2:
+            return None
+        latest_val = float(obs[0]["value"]) * multiplier
+        prev_val   = float(obs[1]["value"]) * multiplier
+        return obs[0]["date"], round(latest_val, 4), round(prev_val, 4)
+    except Exception as e:
+        print(f"[WARN] FRED {sid} failed: {e}")
+        return None
+
+
 def fetch_credit_spreads():
-    """FRED public CSV endpoint — no API key required."""
-    series = {
-        "hy_spread": "BAMLH0A0HYM2",   # ICE BofA US High Yield OAS
-        "ig_spread": "BAMLC0A4CBBB",   # ICE BofA BBB Corp OAS
-    }
-    import time
+    """FRED API — authenticated, no rate limiting."""
     results = {}
-    for name, sid in series.items():
-        try:
-            url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={sid}"
-            r = requests.get(url, headers=HEADERS, timeout=25)
-            r.raise_for_status()
-            lines = [l for l in r.text.strip().split("\n") if l and not l.startswith("DATE")]
-            # Get last two valid rows
-            valid = []
-            for line in reversed(lines):
-                parts = line.split(",")
-                if len(parts) == 2 and parts[1].strip() not in (".", ""):
-                    valid.append((parts[0].strip(), float(parts[1].strip())))
-                if len(valid) == 2:
-                    break
-            if valid:
-                latest_date, latest_val = valid[0]
-                prev_val = valid[1][1] if len(valid) > 1 else latest_val
-                results[name] = {
-                    "value":      round(latest_val * 100, 0),   # convert to bps
-                    "prev":       round(prev_val * 100, 0),
-                    "date":       latest_date,
-                    "change_bps": round((latest_val - prev_val) * 100, 1),
-                }
-            else:
-                results[name] = {"value": None, "prev": None, "date": None, "change_bps": None}
-        except Exception as e:
-            print(f"[WARN] FRED {sid} failed: {e}")
+    for name, sid in [("hy_spread", "BAMLH0A0HYM2"), ("ig_spread", "BAMLC0A4CBBB")]:
+        row = fred_fetch(sid, multiplier=100)  # decimal → bps
+        if row:
+            date, latest, prev = row
+            results[name] = {"value": round(latest, 0), "prev": round(prev, 0),
+                             "date": date, "change_bps": round(latest - prev, 1)}
+        else:
             results[name] = {"value": None, "prev": None, "date": None, "change_bps": None}
-        time.sleep(2)
     return results
 
 
