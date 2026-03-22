@@ -109,7 +109,7 @@ def fetch_market_indices():
 
     # FRED API: VIX, Oil, Gold, 10Y — authenticated, no rate limiting
     for name, sid in [("VIX","VIXCLS"), ("OIL","DCOILWTICO"),
-                      ("GOLD","GLDSC"), ("TNX","DGS10")]:
+                      ("GOLD","GOLDAMGBD228NLBM"), ("TNX","DGS10")]:
         row = fred_fetch(sid)
         if row:
             _, latest, prev = row
