@@ -100,34 +100,38 @@ def fetch_stooq(symbol, days=5):
 
 
 def fetch_market_indices():
-    """Twelve Data batch API — one call, all 6 metrics, no rate limiting."""
-    # Map our internal names to Twelve Data symbols
-    symbols = {
-        "SPX":    "SPX",
-        "VIX":    "VIX",
-        "OIL":    "WTI",
-        "GOLD":   "XAU/USD",
-        "AUDUSD": "AUD/USD",
-        "TNX":    "TNX",
-    }
-    results = {k: {"price": None, "change_pct": None} for k in symbols}
+    """Hybrid: Twelve Data for forex/metals, Stooq for SPX, FRED for VIX/Oil/10Y."""
+    results = {k: {"price": None, "change_pct": None} for k in ["SPX","VIX","OIL","GOLD","AUDUSD","TNX"]}
+
+    # 1. Twelve Data — forex pairs only (reliable in batch)
     try:
-        sym_str = ",".join(symbols.values())
-        url = f"https://api.twelvedata.com/quote?symbol={sym_str}&apikey={TWELVE_API_KEY}"
+        url = f"https://api.twelvedata.com/quote?symbol=XAU/USD,AUD/USD&apikey={TWELVE_API_KEY}"
         r = requests.get(url, headers=HEADERS, timeout=12)
         r.raise_for_status()
         data = r.json()
-        for name, td_sym in symbols.items():
-            entry = data.get(td_sym, {})
-            if entry.get("status") == "error" or "close" not in entry:
-                print(f"[WARN] Twelve Data {td_sym}: {entry.get('message','no data')}")
-                continue
-            price  = float(entry["close"])
-            prev   = float(entry["previous_close"])
-            change = round((price - prev) / prev * 100, 2)
-            results[name] = {"price": round(price, 4), "change_pct": change}
+        for name, sym in [("GOLD","XAU/USD"), ("AUDUSD","AUD/USD")]:
+            entry = data.get(sym, {})
+            if "close" in entry:
+                price = float(entry["close"])
+                prev  = float(entry["previous_close"])
+                results[name] = {"price": round(price, 4), "change_pct": round((price-prev)/prev*100, 2)}
+            else:
+                print(f"[WARN] Twelve Data {sym}: {entry.get('message','no data')}")
     except Exception as e:
-        print(f"[WARN] Twelve Data batch fetch failed: {e}")
+        print(f"[WARN] Twelve Data failed: {e}")
+
+    # 2. Stooq — S&P 500 current price
+    q = fetch_stooq("^spx")
+    if q:
+        results["SPX"] = {"price": q["price"], "change_pct": q["change_pct"]}
+
+    # 3. FRED — VIX, Oil, 10Y (authenticated, 3 calls only)
+    for name, sid in [("VIX","VIXCLS"), ("OIL","DCOILWTICO"), ("TNX","DGS10")]:
+        row = fred_fetch(sid)
+        if row:
+            _, latest, prev = row
+            results[name] = {"price": latest, "change_pct": round((latest-prev)/prev*100, 2)}
+
     return results
 
 
