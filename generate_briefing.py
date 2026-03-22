@@ -101,7 +101,7 @@ def fetch_stooq(symbol, days=5):
 def fetch_market_indices():
     """Stooq for SPX + AUD/USD. FRED for VIX, Oil, Gold, 10Y (more reliable)."""
     # Stooq: indices and forex
-    stooq_tickers = {"SPX": "^spx", "AUDUSD": "audusd"}
+    stooq_tickers = {"SPX": "^spx", "AUDUSD": "audusd", "GOLD": "gc.f"}
     results = {}
     for name, sym in stooq_tickers.items():
         q = fetch_stooq(sym)
