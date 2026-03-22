@@ -1,201 +1,20 @@
 #!/usr/bin/env python3
 """
-Gabe's Weekly Intelligence Briefing — Daily Auto-Generator
-Fetches live market data and merges with weekly editorial content.
-Run manually or via GitHub Actions cron.
+Gabe's Weekly Intelligence Briefing — Static Shell Generator
+Generates the HTML structure + editorial content from static_content.json.
+All live market data is fetched client-side via JavaScript (5-min auto-refresh).
+Run weekly (or via GitHub Actions) to update editorial content only.
 """
 
-import requests
 import json
 import os
-import sys
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
-HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; IntelBriefing/1.0)"}
-FRED_API_KEY = os.environ.get("FRED_API_KEY", "")
-TWELVE_API_KEY = os.environ.get("TWELVE_DATA_API_KEY", "")
 
-# ─── LIVE DATA FETCHERS ────────────────────────────────────────
-
-def fetch_crypto():
-    """CoinGecko public API — no key required."""
-    try:
-        url = (
-            "https://api.coingecko.com/api/v3/simple/price"
-            "?ids=bitcoin,ethereum,ripple,solana"
-            "&vs_currencies=usd"
-            "&include_24hr_change=true"
-            "&include_7d_vol_cap=false"
-            "&include_7d_change=true"
-        )
-        r = requests.get(url, timeout=10)
-        r.raise_for_status()
-        d = r.json()
-        return {
-            "BTC": {
-                "price": d["bitcoin"]["usd"],
-                "change_24h": round(d["bitcoin"].get("usd_24h_change", 0), 2),
-                "change_7d":  round(d["bitcoin"].get("usd_7d_change", 0), 2),
-            },
-            "ETH": {
-                "price": d["ethereum"]["usd"],
-                "change_24h": round(d["ethereum"].get("usd_24h_change", 0), 2),
-                "change_7d":  round(d["ethereum"].get("usd_7d_change", 0), 2),
-            },
-            "XRP": {
-                "price": round(d["ripple"]["usd"], 4),
-                "change_24h": round(d["ripple"].get("usd_24h_change", 0), 2),
-                "change_7d":  round(d["ripple"].get("usd_7d_change", 0), 2),
-            },
-            "SOL": {
-                "price": round(d["solana"]["usd"], 2),
-                "change_24h": round(d["solana"].get("usd_24h_change", 0), 2),
-                "change_7d":  round(d["solana"].get("usd_7d_change", 0), 2),
-            },
-        }
-    except Exception as e:
-        print(f"[WARN] CoinGecko fetch failed: {e}")
-        return None
-
-
-def fetch_fear_greed():
-    """Alternative.me Fear & Greed Index — no key required."""
-    try:
-        r = requests.get("https://api.alternative.me/fng/?limit=1", timeout=8)
-        r.raise_for_status()
-        data = r.json()["data"][0]
-        return {
-            "value": int(data["value"]),
-            "label": data["value_classification"],
-        }
-    except Exception as e:
-        print(f"[WARN] Fear & Greed fetch failed: {e}")
-        return {"value": 0, "label": "Unknown"}
-
-
-def fetch_stooq(symbol, days=5):
-    """Fetch closing prices from Stooq — free, no key, no blocks."""
-    try:
-        from datetime import date, timedelta
-        end   = date.today().strftime("%Y%m%d")
-        start = (date.today() - timedelta(days=days*2 + 10)).strftime("%Y%m%d")
-        url = f"https://stooq.com/q/d/l/?s={symbol}&d1={start}&d2={end}&i=d"
-        r = requests.get(url, headers=HEADERS, timeout=12)
-        r.raise_for_status()
-        lines = [l for l in r.text.strip().split("\n") if l and not l.startswith("Date")]
-        if len(lines) < 2:
-            return None
-        def parse_close(row):
-            parts = row.split(",")
-            return float(parts[4]) if len(parts) >= 5 else None
-        latest = parse_close(lines[-1])
-        prev   = parse_close(lines[-2])
-        if not latest or not prev:
-            return None
-        return {"price": round(latest, 4), "change_pct": round((latest - prev) / prev * 100, 2), "all": lines}
-    except Exception as e:
-        print(f"[WARN] Stooq {symbol} failed: {e}")
-        return None
-
-
-def fetch_market_indices():
-    """Hybrid: Twelve Data for forex/metals, Stooq for SPX, FRED for VIX/Oil/10Y."""
-    results = {k: {"price": None, "change_pct": None} for k in ["SPX","VIX","OIL","GOLD","AUDUSD","TNX"]}
-
-    # 1. Twelve Data — forex pairs only (reliable in batch)
-    try:
-        url = f"https://api.twelvedata.com/quote?symbol=XAU/USD,AUD/USD&apikey={TWELVE_API_KEY}"
-        r = requests.get(url, headers=HEADERS, timeout=12)
-        r.raise_for_status()
-        data = r.json()
-        for name, sym in [("GOLD","XAU/USD"), ("AUDUSD","AUD/USD")]:
-            entry = data.get(sym, {})
-            if "close" in entry:
-                price = float(entry["close"])
-                prev  = float(entry["previous_close"])
-                results[name] = {"price": round(price, 4), "change_pct": round((price-prev)/prev*100, 2)}
-            else:
-                print(f"[WARN] Twelve Data {sym}: {entry.get('message','no data')}")
-    except Exception as e:
-        print(f"[WARN] Twelve Data failed: {e}")
-
-    # 2. Stooq — S&P 500 current price
-    q = fetch_stooq("^spx")
-    if q:
-        results["SPX"] = {"price": q["price"], "change_pct": q["change_pct"]}
-
-    # 3. FRED — VIX, Oil, 10Y (authenticated, 3 calls only)
-    for name, sid in [("VIX","VIXCLS"), ("OIL","DCOILWTICO"), ("TNX","DGS10")]:
-        row = fred_fetch(sid)
-        if row:
-            _, latest, prev = row
-            results[name] = {"price": latest, "change_pct": round((latest-prev)/prev*100, 2)}
-
-    return results
-
-
-def fetch_sp500_ma():
-    """S&P 500 50d vs 200d MA via FRED SP500 series — death cross detector."""
-    try:
-        url = (
-            f"https://api.stlouisfed.org/fred/series/observations"
-            f"?series_id=SP500&api_key={FRED_API_KEY}"
-            f"&file_type=json&sort_order=desc&limit=210"
-        )
-        r = requests.get(url, headers=HEADERS, timeout=12)
-        r.raise_for_status()
-        obs = [float(o["value"]) for o in r.json()["observations"] if o["value"] != "."]
-        if len(obs) < 200:
-            print(f"[WARN] SP500 MA: only {len(obs)} observations")
-            return {"ma50": None, "ma200": None, "death_cross": None}
-        # obs is newest-first; reverse for chronological order
-        closes = list(reversed(obs))
-        ma50  = round(sum(closes[-50:])  / 50,  0)
-        ma200 = round(sum(closes[-200:]) / 200, 0)
-        return {"ma50": ma50, "ma200": ma200, "death_cross": ma50 < ma200}
-    except Exception as e:
-        print(f"[WARN] SP500 MA (FRED) failed: {e}")
-        return {"ma50": None, "ma200": None, "death_cross": None}
-
-
-def fred_fetch(sid, multiplier=1.0):
-    """Fetch latest 2 observations from FRED API. Returns (latest_date, latest_val, prev_val) or None."""
-    try:
-        url = (
-            f"https://api.stlouisfed.org/fred/series/observations"
-            f"?series_id={sid}&api_key={FRED_API_KEY}"
-            f"&file_type=json&sort_order=desc&limit=10"
-        )
-        r = requests.get(url, headers=HEADERS, timeout=8)
-        r.raise_for_status()
-        obs = [o for o in r.json()["observations"] if o["value"] != "."]
-        if len(obs) < 2:
-            return None
-        latest_val = float(obs[0]["value"]) * multiplier
-        prev_val   = float(obs[1]["value"]) * multiplier
-        return obs[0]["date"], round(latest_val, 4), round(prev_val, 4)
-    except Exception as e:
-        print(f"[WARN] FRED {sid} failed: {e}")
-        return None
-
-
-def fetch_credit_spreads():
-    """FRED API — authenticated, no rate limiting."""
-    results = {}
-    for name, sid in [("hy_spread", "BAMLH0A0HYM2"), ("ig_spread", "BAMLC0A4CBBB")]:
-        row = fred_fetch(sid, multiplier=100)  # decimal → bps
-        if row:
-            date, latest, prev = row
-            results[name] = {"value": round(latest, 0), "prev": round(prev, 0),
-                             "date": date, "change_bps": round(latest - prev, 1)}
-        else:
-            results[name] = {"value": None, "prev": None, "date": None, "change_bps": None}
-    return results
-
+# ─── STATIC CONTENT LOADER ────────────────────────────────────
 
 def load_static_content():
-    """Load editorial sections from static_content.json."""
     path = Path(__file__).parent / "static_content.json"
     if path.exists():
         with open(path) as f:
@@ -203,130 +22,48 @@ def load_static_content():
     return {}
 
 
-# ─── DELTA HELPER ─────────────────────────────────────────────
-
-def delta_html(val, reverse=False):
-    """Return a coloured delta arrow string. reverse=True means up is bad."""
-    if val is None:
-        return ""
-    if val > 0.1:
-        color = "#ff4444" if reverse else "#22c55e"
-        return f'<span style="color:{color};font-weight:700">▲ {val:+.2f}%</span>'
-    elif val < -0.1:
-        color = "#22c55e" if reverse else "#ff4444"
-        return f'<span style="color:{color};font-weight:700">▼ {val:+.2f}%</span>'
-    else:
-        return f'<span style="color:#94a3b8;font-weight:700">= {val:+.2f}%</span>'
-
-
-def bps_delta_html(bps, reverse=True):
-    if bps is None:
-        return ""
-    if bps > 0:
-        color = "#ff4444" if reverse else "#22c55e"
-        return f'<span style="color:{color};font-weight:700">▲ +{bps:.0f} bps</span>'
-    elif bps < 0:
-        color = "#22c55e" if reverse else "#ff4444"
-        return f'<span style="color:{color};font-weight:700">▼ {bps:.0f} bps</span>'
-    else:
-        return f'<span style="color:#94a3b8;font-weight:700">= 0 bps</span>'
-
-
-def fmt_price(val, prefix="", decimals=2):
-    if val is None:
-        return "—"
-    if val >= 1000:
-        return f"{prefix}{val:,.0f}"
-    return f"{prefix}{val:,.{decimals}f}"
-
-
 # ─── HTML GENERATOR ───────────────────────────────────────────
 
-def generate_html(crypto, fear_greed, indices, sp_ma, spreads, static):
+def generate_html(static):
     now_utc = datetime.now(timezone.utc)
-    # Sydney = UTC+11 (AEDT) or UTC+10 (AEST); approximate
     sydney_offset = timedelta(hours=11)
     now_sydney = now_utc + sydney_offset
-    updated_str = now_sydney.strftime("%a %d %b %Y %H:%M AEDT")
+    build_str = now_sydney.strftime("%a %d %b %Y %H:%M AEDT")
     briefing_date = static.get("briefing_date", "Unknown")
     master_verdict = static.get("master_verdict", "CAUTION")
     verdict_color = {"DANGER": "#ff4444", "CAUTION": "#f59e0b", "CLEAR": "#22c55e", "WAIT": "#6366f1"}.get(master_verdict, "#f59e0b")
+    mv_bg = {"DANGER": "linear-gradient(135deg,#1a0a0a,#2a1010)", "CAUTION": "linear-gradient(135deg,#1a1400,#2a2000)", "CLEAR": "linear-gradient(135deg,#0a1a0a,#102a10)"}.get(master_verdict, "linear-gradient(135deg,#0d0f14,#141720)")
 
-    # S&P 500
-    spx = indices.get("SPX", {})
-    spx_price = fmt_price(spx.get("price"), "$")
-    spx_delta = delta_html(spx.get("change_pct"))
-    dc = sp_ma.get("death_cross")
-    dc_label = "⚠ Death Cross Active" if dc else ("✓ No Death Cross" if dc is not None else "—")
-    dc_color = "#ff4444" if dc else "#22c55e"
+    # Checklist
+    checklist_html = ""
+    for item in static.get("checklist", []):
+        state = item.get("state", "open")
+        cls = {"done": "done", "partial": "partial", "open": "open"}.get(state, "open")
+        icon = {"done": "✓", "partial": "◐", "open": "☐"}.get(state, "☐")
+        checklist_html += f'<div class="check-item {cls}"><span class="check-icon">{icon}</span>{item.get("text","")}</div>'
 
-    # VIX
-    vix = indices.get("VIX", {})
-    vix_val = fmt_price(vix.get("price"), decimals=1)
-    vix_delta = delta_html(vix.get("change_pct"), reverse=True)
-    vix_level = "DANGER" if (vix.get("price") or 0) > 30 else ("CAUTION" if (vix.get("price") or 0) > 20 else "CLEAR")
-
-    # Oil
-    oil = indices.get("OIL", {})
-    oil_price = fmt_price(oil.get("price"), "$")
-    oil_delta = delta_html(oil.get("change_pct"), reverse=True)
-
-    # Gold
-    gold = indices.get("GOLD", {})
-    gold_price = fmt_price(gold.get("price"), "$")
-    gold_delta = delta_html(gold.get("change_pct"))
-
-    # AUDUSD
-    aud = indices.get("AUDUSD", {})
-    aud_price = fmt_price(aud.get("price"), decimals=4)
-    aud_delta = delta_html(aud.get("change_pct"))
-
-    # 10Y
-    tnx = indices.get("TNX", {})
-    tnx_price = f"{tnx.get('price', '—')}%" if tnx.get("price") else "—"
-    tnx_delta = delta_html(tnx.get("change_pct"), reverse=True)
-
-    # Spreads
-    hy = spreads.get("hy_spread", {})
-    ig = spreads.get("ig_spread", {})
-    hy_val = f"{hy.get('value', '—'):.0f} bps" if hy.get("value") else "—"
-    ig_val = f"{ig.get('value', '—'):.0f} bps" if ig.get("value") else "—"
-    hy_delta = bps_delta_html(hy.get("change_bps"))
-    ig_delta = bps_delta_html(ig.get("change_bps"))
-    hy_date = f"FRED data: {hy.get('date', 'N/A')}"
-    ig_date = f"FRED data: {ig.get('date', 'N/A')}"
-
-    # Fear & Greed
-    fg_val = fear_greed.get("value", 0)
-    fg_label = fear_greed.get("label", "Unknown")
-    fg_color = "#ff4444" if fg_val < 30 else ("#f59e0b" if fg_val < 50 else "#22c55e")
-    fg_emoji = "😱" if fg_val < 25 else ("😨" if fg_val < 40 else ("😐" if fg_val < 55 else ("😊" if fg_val < 75 else "🤩")))
-
-    # Crypto rows
+    # Crypto rows — signals from static JSON, prices filled by JS
     crypto_rows = ""
-    if crypto:
-        sym_styles = {"BTC": "#f7931a", "ETH": "#627eea", "XRP": "#00aae4", "SOL": "#9945ff"}
-        sym_signals = static.get("crypto_signals", {})
-        for sym, c in crypto.items():
-            color = sym_styles.get(sym, "#fff")
-            sig = sym_signals.get(sym, "—")
-            p24 = delta_html(c.get("change_24h"))
-            p7 = delta_html(c.get("change_7d"))
-            price_str = f"${c['price']:,.0f}" if c['price'] > 100 else f"${c['price']:,.4f}"
-            crypto_rows += f"""
-            <tr>
+    sym_styles = {"BTC": "#f7931a", "ETH": "#627eea", "XRP": "#00aae4", "SOL": "#9945ff"}
+    sym_signals = static.get("crypto_signals", {})
+    for sym in ["BTC", "ETH", "XRP", "SOL"]:
+        color = sym_styles.get(sym, "#fff")
+        sig = sym_signals.get(sym, "—")
+        crypto_rows += f"""
+            <tr id="crypto-row-{sym}">
               <td><span style="font-weight:700;color:{color};font-size:15px">{sym}</span></td>
-              <td><strong>{price_str}</strong></td>
-              <td>{p24}</td>
-              <td>{p7}</td>
+              <td class="crypto-price">—</td>
+              <td class="crypto-24h">—</td>
+              <td class="crypto-7d">—</td>
               <td style="color:#8892a4;font-size:12px">{sig}</td>
             </tr>"""
 
-    # Editorial sections from JSON
+    # Editorial sections
     sections_html = ""
+    verdict_colors = {"DANGER": "#ff4444", "CAUTION": "#f59e0b", "CLEAR": "#22c55e", "WAIT": "#a5b4fc", "ACCELERATING": "#22c55e", "FEAR": "#ff4444"}
     for section in static.get("sections", []):
         verdict = section.get("verdict", "CAUTION")
-        v_color = {"DANGER": "#ff4444", "CAUTION": "#f59e0b", "CLEAR": "#22c55e", "WAIT": "#a5b4fc", "ACCELERATING": "#22c55e", "FEAR": "#ff4444"}.get(verdict, "#f59e0b")
+        v_color = verdict_colors.get(verdict, "#f59e0b")
         items_html = ""
         for item in section.get("items", []):
             status = item.get("status", "caution")
@@ -341,7 +78,6 @@ def generate_html(crypto, fear_greed, indices, sp_ma, spreads, static):
               <div class="card-sub"><span style="color:{delta_c};font-weight:700">{delta_icon}</span> {item.get('sub','')}</div>
               <div class="card-note">{item.get('note','')}</div>
             </div>"""
-
         sections_html += f"""
       <div class="section-header">
         <span class="section-num">{section.get('num','')}</span>
@@ -352,19 +88,7 @@ def generate_html(crypto, fear_greed, indices, sp_ma, spreads, static):
       <div class="cards-grid">{items_html}</div>
       <div class="action-bar"><strong>Action:</strong> {section.get('action','')}</div>"""
 
-    # Checklist
-    checklist_html = ""
-    for item in static.get("checklist", []):
-        state = item.get("state", "open")
-        cls = {"done": "done", "partial": "partial", "open": "open"}.get(state, "open")
-        icon = {"done": "✓", "partial": "◐", "open": "☐"}.get(state, "☐")
-        checklist_html += f'<div class="check-item {cls}"><span class="check-icon">{icon}</span>{item.get("text","")}</div>'
-
-    # Master verdict colour
-    mv_bg = {"DANGER": "linear-gradient(135deg,#1a0a0a,#2a1010)", "CAUTION": "linear-gradient(135deg,#1a1400,#2a2000)", "CLEAR": "linear-gradient(135deg,#0a1a0a,#102a10)"}.get(master_verdict, "linear-gradient(135deg,#0d0f14,#141720)")
-
-    # Summary table rows (built outside f-string to avoid nested dict issues)
-    verdict_colors = {"DANGER":"#ff4444","CAUTION":"#f59e0b","CLEAR":"#22c55e","WAIT":"#a5b4fc","ACCELERATING":"#22c55e","FEAR":"#ff4444"}
+    # Summary table
     summary_rows_html = ""
     for r in static.get("summary_rows", []):
         vc = verdict_colors.get(r["status"], "#f59e0b")
@@ -374,18 +98,20 @@ def generate_html(crypto, fear_greed, indices, sp_ma, spreads, static):
             f'<td>{r["key"]}</td><td>{r["direction"]}</td><td>{r["action"]}</td></tr>'
         )
 
+    vc_rgb = ",".join(str(int(verdict_color.lstrip("#")[i:i+2], 16)) for i in (0, 2, 4))
+
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Intel Briefing · {updated_str}</title>
+<title>Intel Briefing · {build_str}</title>
 <style>
   :root{{--bg:#0d0f14;--card:#141720;--card2:#1a1f2e;--border:#252a3a;--text:#e2e8f0;--muted:#8892a4;--danger:#ff4444;--danger-glow:rgba(255,68,68,.25);--caution:#f59e0b;--caution-glow:rgba(245,158,11,.25);--clear:#22c55e;--clear-glow:rgba(34,197,94,.25);--accent:#6366f1}}
   *{{box-sizing:border-box;margin:0;padding:0}}
   body{{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px;line-height:1.5}}
   .container{{max-width:1280px;margin:0 auto;padding:24px 16px}}
-  .master-banner{{background:{mv_bg};border:2px solid {verdict_color};border-radius:12px;padding:20px 28px;margin-bottom:24px;box-shadow:0 0 30px rgba({",".join(str(int(verdict_color.lstrip("#")[i:i+2],16)) for i in (0,2,4))},.3);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px}}
+  .master-banner{{background:{mv_bg};border:2px solid {verdict_color};border-radius:12px;padding:20px 28px;margin-bottom:24px;box-shadow:0 0 30px rgba({vc_rgb},.3);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px}}
   .master-banner h1{{font-size:22px;font-weight:700}}
   .verdict-badge{{font-size:28px;font-weight:900;letter-spacing:3px;color:{verdict_color};text-shadow:0 0 20px {verdict_color}}}
   .meta{{color:var(--muted);font-size:12px;margin-top:4px}}
@@ -434,6 +160,8 @@ def generate_html(crypto, fear_greed, indices, sp_ma, spreads, static):
   @media(max-width:600px){{.master-banner{{flex-direction:column}}.live-grid{{grid-template-columns:repeat(2,1fr)}}.cards-grid{{grid-template-columns:1fr}}}}
   footer{{text-align:center;color:var(--muted);font-size:11px;padding:24px 0 12px}}
   hr{{border:none;border-top:1px solid var(--border);margin:8px 0}}
+  .spinner{{display:none;width:10px;height:10px;border:2px solid #22c55e;border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;vertical-align:middle;margin-left:6px}}
+  @keyframes spin{{to{{transform:rotate(360deg)}}}}
 </style>
 </head>
 <body>
@@ -443,7 +171,7 @@ def generate_html(crypto, fear_greed, indices, sp_ma, spreads, static):
   <div class="master-banner">
     <div>
       <h1>⚡ Weekly Intelligence Briefing</h1>
-      <div class="meta">Gabe Enslin · Market data updated: {updated_str} &nbsp;<span class="live-badge">● LIVE</span></div>
+      <div class="meta">Gabe Enslin · Last refreshed: <span id="last-updated">loading...</span> <span class="spinner" id="refresh-spinner"></span> &nbsp;<span class="live-badge">● LIVE</span></div>
       <div class="meta" style="margin-top:4px">Editorial commentary: updated {briefing_date}</div>
     </div>
     <div style="text-align:right">
@@ -463,58 +191,58 @@ def generate_html(crypto, fear_greed, indices, sp_ma, spreads, static):
     <div class="live-section-header">
       <span style="color:#8892a4;font-size:12px">00</span>
       <h2>Live Market Snapshot</h2>
-      <span class="live-badge">● AUTO-UPDATES DAILY</span>
+      <span class="live-badge">● REFRESHES EVERY 5 MIN</span>
     </div>
     <div class="live-grid">
       <div class="live-card">
         <div class="live-card-label">S&amp;P 500</div>
-        <div class="live-card-value">{spx_price}</div>
-        <div class="live-card-sub">{spx_delta}</div>
+        <div class="live-card-value" id="spx-val">—</div>
+        <div class="live-card-sub" id="spx-delta"></div>
       </div>
       <div class="live-card">
         <div class="live-card-label">VIX (Fear Index)</div>
-        <div class="live-card-value" style="color:{'#ff4444' if vix_level=='DANGER' else ('#f59e0b' if vix_level=='CAUTION' else '#22c55e')}">{vix_val}</div>
-        <div class="live-card-sub">{vix_delta}</div>
+        <div class="live-card-value" id="vix-val">—</div>
+        <div class="live-card-sub" id="vix-delta"></div>
       </div>
       <div class="live-card">
         <div class="live-card-label">Death Cross (50d/200d)</div>
-        <div class="live-card-value" style="font-size:14px;color:{dc_color}">{dc_label}</div>
-        <div class="live-card-sub">50d: {sp_ma.get("ma50","—")} · 200d: {sp_ma.get("ma200","—")}</div>
+        <div class="live-card-value" style="font-size:14px" id="dc-label">Loading...</div>
+        <div class="live-card-sub" id="dc-sub">—</div>
       </div>
       <div class="live-card">
         <div class="live-card-label">HY Credit Spreads</div>
-        <div class="live-card-value" style="color:#ff4444">{hy_val}</div>
-        <div class="live-card-sub">{hy_delta} · <span style="font-size:11px">{hy_date}</span></div>
+        <div class="live-card-value" id="hy-val">—</div>
+        <div class="live-card-sub" id="hy-delta"></div>
       </div>
       <div class="live-card">
         <div class="live-card-label">IG Credit Spreads</div>
-        <div class="live-card-value" style="color:#f59e0b">{ig_val}</div>
-        <div class="live-card-sub">{ig_delta} · <span style="font-size:11px">{ig_date}</span></div>
+        <div class="live-card-value" id="ig-val">—</div>
+        <div class="live-card-sub" id="ig-delta"></div>
       </div>
       <div class="live-card">
         <div class="live-card-label">Fear &amp; Greed Index</div>
-        <div class="live-card-value" style="color:{fg_color}">{fg_emoji} {fg_val}</div>
-        <div class="live-card-sub">{fg_label}</div>
+        <div class="live-card-value" id="fg-val">—</div>
+        <div class="live-card-sub" id="fg-sub"></div>
       </div>
       <div class="live-card">
         <div class="live-card-label">Oil (WTI)</div>
-        <div class="live-card-value">{oil_price}</div>
-        <div class="live-card-sub">{oil_delta}</div>
+        <div class="live-card-value" id="oil-val">—</div>
+        <div class="live-card-sub" id="oil-delta"></div>
       </div>
       <div class="live-card">
         <div class="live-card-label">Gold</div>
-        <div class="live-card-value">{gold_price}</div>
-        <div class="live-card-sub">{gold_delta}</div>
+        <div class="live-card-value" id="gold-val">—</div>
+        <div class="live-card-sub" id="gold-delta"></div>
       </div>
       <div class="live-card">
         <div class="live-card-label">AUD/USD</div>
-        <div class="live-card-value">{aud_price}</div>
-        <div class="live-card-sub">{aud_delta}</div>
+        <div class="live-card-value" id="aud-val">—</div>
+        <div class="live-card-sub" id="aud-delta"></div>
       </div>
       <div class="live-card">
         <div class="live-card-label">US 10Y Yield</div>
-        <div class="live-card-value">{tnx_price}</div>
-        <div class="live-card-sub">{tnx_delta}</div>
+        <div class="live-card-value" id="tnx-val">—</div>
+        <div class="live-card-sub" id="tnx-delta"></div>
       </div>
     </div>
   </div>
@@ -524,7 +252,7 @@ def generate_html(crypto, fear_greed, indices, sp_ma, spreads, static):
     <span class="section-num">CRYPTO</span>
     <h2>Crypto</h2>
     <span class="live-badge" style="font-size:11px;background:rgba(34,197,94,.15);color:#22c55e;border:1px solid #22c55e;border-radius:4px;padding:2px 8px;font-weight:700">● LIVE PRICES</span>
-    <span style="font-size:11px;color:#8892a4;margin-left:auto">F&amp;G: {fg_val} — {fg_label} {fg_emoji}</span>
+    <span style="font-size:11px;color:#8892a4;margin-left:auto" id="fg-header"></span>
   </div>
   <div class="crypto-table-wrap">
     <table>
@@ -546,10 +274,201 @@ def generate_html(crypto, fear_greed, indices, sp_ma, spreads, static):
   </div>
 
   <footer>
-    Market data: Yahoo Finance · CoinGecko · FRED (St. Louis Fed) · Alternative.me &nbsp;|&nbsp; Editorial: weekly research by Claude &nbsp;|&nbsp; Auto-refreshes daily via GitHub Actions &nbsp;|&nbsp; Not financial advice.
+    Market data: CoinGecko · Twelve Data · FRED (St. Louis Fed) · Alternative.me &nbsp;|&nbsp; Editorial: weekly research by Claude &nbsp;|&nbsp; Refreshes every 5 minutes &nbsp;|&nbsp; Not financial advice.
   </footer>
 
 </div>
+
+<script>
+const TWELVE_KEY = '9de622129104418cb717994ac9d7d70e';
+const FRED_KEY   = '6d18d219c04d01ecd8c5dd1a9dcf43f7';
+
+function deltaHtml(val, reverse) {{
+  if (val === null || val === undefined) return '';
+  const up   = reverse ? '#ff4444' : '#22c55e';
+  const down = reverse ? '#22c55e' : '#ff4444';
+  const sign = val >= 0 ? '+' : '';
+  if (val > 0.05)  return `<span style="color:${{up}};font-weight:700">▲ ${{sign}}${{val.toFixed(2)}}%</span>`;
+  if (val < -0.05) return `<span style="color:${{down}};font-weight:700">▼ ${{val.toFixed(2)}}%</span>`;
+  return `<span style="color:#94a3b8;font-weight:700">= ${{sign}}${{val.toFixed(2)}}%</span>`;
+}}
+
+function bpsDelta(bps) {{
+  if (bps === null || bps === undefined) return '';
+  if (bps > 0)  return `<span style="color:#ff4444;font-weight:700">▲ +${{bps.toFixed(0)}} bps</span>`;
+  if (bps < 0)  return `<span style="color:#22c55e;font-weight:700">▼ ${{bps.toFixed(0)}} bps</span>`;
+  return `<span style="color:#94a3b8;font-weight:700">= 0 bps</span>`;
+}}
+
+function set(id, html, isText) {{
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (isText) el.textContent = html; else el.innerHTML = html;
+}}
+
+async function fredObs(sid, limit) {{
+  const url = `https://api.stlouisfed.org/fred/series/observations?series_id=${{sid}}&api_key=${{FRED_KEY}}&file_type=json&sort_order=desc&limit=${{limit || 2}}`;
+  const r = await fetch(url);
+  const d = await r.json();
+  return (d.observations || []).filter(o => o.value !== '.');
+}}
+
+async function fetchTwelve() {{
+  const url = `https://api.twelvedata.com/quote?symbol=SPX,XAU/USD,AUD/USD&apikey=${{TWELVE_KEY}}`;
+  const d   = await (await fetch(url)).json();
+
+  const spx = d['SPX'];
+  if (spx?.close) {{
+    const p = parseFloat(spx.close), prev = parseFloat(spx.previous_close);
+    set('spx-val',   '$' + p.toLocaleString('en-US', {{maximumFractionDigits:0}}), true);
+    set('spx-delta', deltaHtml((p-prev)/prev*100));
+  }}
+  const gold = d['XAU/USD'];
+  if (gold?.close) {{
+    const p = parseFloat(gold.close), prev = parseFloat(gold.previous_close);
+    set('gold-val',   '$' + p.toLocaleString('en-US', {{maximumFractionDigits:0}}), true);
+    set('gold-delta', deltaHtml((p-prev)/prev*100));
+  }}
+  const aud = d['AUD/USD'];
+  if (aud?.close) {{
+    const p = parseFloat(aud.close), prev = parseFloat(aud.previous_close);
+    set('aud-val',   p.toFixed(4), true);
+    set('aud-delta', deltaHtml((p-prev)/prev*100));
+  }}
+}}
+
+async function fetchFred() {{
+  // VIX
+  try {{
+    const obs = await fredObs('VIXCLS');
+    if (obs.length >= 2) {{
+      const v = parseFloat(obs[0].value), pv = parseFloat(obs[1].value);
+      const el = document.getElementById('vix-val');
+      el.style.color = v > 30 ? '#ff4444' : (v > 20 ? '#f59e0b' : '#22c55e');
+      el.textContent  = v.toFixed(1);
+      set('vix-delta', deltaHtml((v-pv)/pv*100, true));
+    }}
+  }} catch(e) {{ console.warn('VIX',e); }}
+
+  // Oil
+  try {{
+    const obs = await fredObs('DCOILWTICO');
+    if (obs.length >= 2) {{
+      const v = parseFloat(obs[0].value), pv = parseFloat(obs[1].value);
+      set('oil-val',   '$' + v.toFixed(2), true);
+      set('oil-delta', deltaHtml((v-pv)/pv*100, true));
+    }}
+  }} catch(e) {{ console.warn('Oil',e); }}
+
+  // 10Y
+  try {{
+    const obs = await fredObs('DGS10');
+    if (obs.length >= 2) {{
+      const v = parseFloat(obs[0].value), pv = parseFloat(obs[1].value);
+      set('tnx-val',   v.toFixed(2) + '%', true);
+      set('tnx-delta', deltaHtml((v-pv)/pv*100, true));
+    }}
+  }} catch(e) {{ console.warn('10Y',e); }}
+
+  // HY Spreads
+  try {{
+    const obs = await fredObs('BAMLH0A0HYM2');
+    if (obs.length >= 2) {{
+      const v = parseFloat(obs[0].value)*100, pv = parseFloat(obs[1].value)*100;
+      const el = document.getElementById('hy-val');
+      el.textContent = v.toFixed(0) + ' bps';
+      el.style.color  = v > 500 ? '#ff4444' : (v > 350 ? '#f59e0b' : '#22c55e');
+      set('hy-delta', bpsDelta(v-pv) + ` · <span style="font-size:11px">FRED: ${{obs[0].date}}</span>`);
+    }}
+  }} catch(e) {{ console.warn('HY',e); }}
+
+  // IG Spreads
+  try {{
+    const obs = await fredObs('BAMLC0A4CBBB');
+    if (obs.length >= 2) {{
+      const v = parseFloat(obs[0].value)*100, pv = parseFloat(obs[1].value)*100;
+      const el = document.getElementById('ig-val');
+      el.textContent = v.toFixed(0) + ' bps';
+      el.style.color  = v > 200 ? '#ff4444' : (v > 120 ? '#f59e0b' : '#22c55e');
+      set('ig-delta', bpsDelta(v-pv) + ` · <span style="font-size:11px">FRED: ${{obs[0].date}}</span>`);
+    }}
+  }} catch(e) {{ console.warn('IG',e); }}
+}}
+
+async function fetchSpMA() {{
+  const obs = await fredObs('SP500', 210);
+  const closes = obs.map(o => parseFloat(o.value)).reverse();
+  if (closes.length < 200) return;
+  const ma50  = closes.slice(-50).reduce((a,b)=>a+b,0)/50;
+  const ma200 = closes.slice(-200).reduce((a,b)=>a+b,0)/200;
+  const isDeath = ma50 < ma200;
+  const el = document.getElementById('dc-label');
+  el.style.color = isDeath ? '#ff4444' : '#22c55e';
+  el.textContent  = isDeath ? '⚠ Death Cross Active' : '✓ No Death Cross';
+  set('dc-sub', `50d: ${{ma50.toFixed(0)}} · 200d: ${{ma200.toFixed(0)}}`, true);
+}}
+
+async function fetchFearGreed() {{
+  const d     = await (await fetch('https://api.alternative.me/fng/?limit=1')).json();
+  const entry = d.data[0];
+  const val   = parseInt(entry.value);
+  const label = entry.value_classification;
+  const color = val < 30 ? '#ff4444' : (val < 50 ? '#f59e0b' : '#22c55e');
+  const emoji = val < 25 ? '😱' : (val < 40 ? '😨' : (val < 55 ? '😐' : (val < 75 ? '😊' : '🤩')));
+  const el    = document.getElementById('fg-val');
+  el.style.color = color;
+  el.textContent  = `${{emoji}} ${{val}}`;
+  set('fg-sub',    label, true);
+  set('fg-header', `F&G: ${{val}} — ${{label}} ${{emoji}}`, true);
+}}
+
+async function fetchCrypto() {{
+  const url = 'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,ripple,solana&vs_currencies=usd&include_24hr_change=true&include_7d_change=true';
+  const d   = await (await fetch(url)).json();
+  const map = {{BTC:'bitcoin', ETH:'ethereum', XRP:'ripple', SOL:'solana'}};
+  for (const [sym, id] of Object.entries(map)) {{
+    const row = document.getElementById(`crypto-row-${{sym}}`);
+    if (!row || !d[id]) continue;
+    const p   = d[id].usd;
+    const c24 = d[id].usd_24h_change || 0;
+    const c7d = d[id].usd_7d_change  || 0;
+    const ps  = p > 100 ? '$' + p.toLocaleString('en-US', {{maximumFractionDigits:0}}) : '$' + p.toFixed(4);
+    row.querySelector('.crypto-price').innerHTML = `<strong>${{ps}}</strong>`;
+    row.querySelector('.crypto-24h').innerHTML   = deltaHtml(c24);
+    row.querySelector('.crypto-7d').innerHTML    = deltaHtml(c7d);
+  }}
+}}
+
+// ── Refresh loop ──────────────────────────────────────────────
+let lastRefresh = null;
+
+function updateTimer() {{
+  if (!lastRefresh) return;
+  const s = Math.round((Date.now() - lastRefresh) / 1000);
+  const txt = s < 60 ? `${{s}}s ago` : `${{Math.floor(s/60)}}m ${{s%60}}s ago`;
+  const el  = document.getElementById('last-updated');
+  if (el) el.textContent = txt;
+}}
+
+async function refreshAll() {{
+  const spin = document.getElementById('refresh-spinner');
+  if (spin) spin.style.display = 'inline-block';
+  await Promise.allSettled([
+    fetchTwelve(),
+    fetchFred(),
+    fetchSpMA(),
+    fetchFearGreed(),
+    fetchCrypto()
+  ]);
+  lastRefresh = Date.now();
+  if (spin) spin.style.display = 'none';
+  updateTimer();
+}}
+
+refreshAll();
+setInterval(refreshAll,  5 * 60 * 1000);  // refresh data every 5 min
+setInterval(updateTimer, 15 * 1000);       // update "X ago" counter every 15s
+</script>
 </body>
 </html>"""
 
@@ -557,33 +476,13 @@ def generate_html(crypto, fear_greed, indices, sp_ma, spreads, static):
 # ─── MAIN ─────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    print("📡 Fetching live data...")
-
-    print("  → Crypto (CoinGecko)...")
-    crypto = fetch_crypto()
-
-    print("  → Fear & Greed (alternative.me)...")
-    fear_greed = fetch_fear_greed()
-
-    print("  → Market indices (Yahoo Finance)...")
-    indices = fetch_market_indices()
-
-    print("  → S&P 500 moving averages...")
-    sp_ma = fetch_sp500_ma()
-
-    print("  → Credit spreads (FRED)...")
-    spreads = fetch_credit_spreads()
-
-    print("  → Loading editorial content...")
+    print("📋 Loading editorial content...")
     static = load_static_content()
 
-    print("  → Generating HTML...")
-    html = generate_html(crypto, fear_greed, indices, sp_ma, spreads, static)
+    print("📝 Generating HTML...")
+    html = generate_html(static)
 
     out_path = Path(__file__).parent / "index.html"
     out_path.write_text(html, encoding="utf-8")
     print(f"✅ Done → {out_path}")
-    print(f"   SPX: {indices.get('SPX',{}).get('price','—')}")
-    print(f"   BTC: {crypto.get('BTC',{}).get('price','—') if crypto else '—'}")
-    print(f"   F&G: {fear_greed.get('value','—')} ({fear_greed.get('label','—')})")
-    print(f"   HY:  {spreads.get('hy_spread',{}).get('value','—')} bps")
+    print("   Live market data fetched client-side (5-min browser refresh)")
