@@ -136,23 +136,26 @@ def fetch_market_indices():
 
 
 def fetch_sp500_ma():
-    """S&P 500 50d vs 200d MA via Twelve Data time series — death cross detector."""
+    """S&P 500 50d vs 200d MA via FRED SP500 series — death cross detector."""
     try:
-        url = f"https://api.twelvedata.com/time_series?symbol=SPX&interval=1day&outputsize=205&apikey={TWELVE_API_KEY}"
-        r = requests.get(url, headers=HEADERS, timeout=15)
+        url = (
+            f"https://api.stlouisfed.org/fred/series/observations"
+            f"?series_id=SP500&api_key={FRED_API_KEY}"
+            f"&file_type=json&sort_order=desc&limit=210"
+        )
+        r = requests.get(url, headers=HEADERS, timeout=12)
         r.raise_for_status()
-        data = r.json()
-        if "values" not in data:
-            print(f"[WARN] SP500 MA: unexpected response: {data.get('message','no values key')}")
+        obs = [float(o["value"]) for o in r.json()["observations"] if o["value"] != "."]
+        if len(obs) < 200:
+            print(f"[WARN] SP500 MA: only {len(obs)} observations")
             return {"ma50": None, "ma200": None, "death_cross": None}
-        closes = [float(v["close"]) for v in reversed(data["values"])]
-        if len(closes) < 200:
-            return {"ma50": None, "ma200": None, "death_cross": None}
+        # obs is newest-first; reverse for chronological order
+        closes = list(reversed(obs))
         ma50  = round(sum(closes[-50:])  / 50,  0)
         ma200 = round(sum(closes[-200:]) / 200, 0)
         return {"ma50": ma50, "ma200": ma200, "death_cross": ma50 < ma200}
     except Exception as e:
-        print(f"[WARN] SP500 MA (Twelve Data) failed: {e}")
+        print(f"[WARN] SP500 MA (FRED) failed: {e}")
         return {"ma50": None, "ma200": None, "death_cross": None}
 
 
