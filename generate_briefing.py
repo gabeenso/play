@@ -136,29 +136,23 @@ def fetch_market_indices():
 
 
 def fetch_sp500_ma():
-    """S&P 500 50d vs 200d MA via Stooq — death cross detector."""
+    """S&P 500 50d vs 200d MA via Twelve Data time series — death cross detector."""
     try:
-        from datetime import date, timedelta
-        end   = date.today().strftime("%Y%m%d")
-        start = (date.today() - timedelta(days=260)).strftime("%Y%m%d")
-        url   = f"https://stooq.com/q/d/l/?s=^spx&d1={start}&d2={end}&i=d"
-        r = requests.get(url, headers=HEADERS, timeout=8)
+        url = f"https://api.twelvedata.com/time_series?symbol=SPX&interval=1day&outputsize=205&apikey={TWELVE_API_KEY}"
+        r = requests.get(url, headers=HEADERS, timeout=15)
         r.raise_for_status()
-        lines = [l for l in r.text.strip().split("\n") if l and not l.startswith("Date")]
-        closes = []
-        for l in lines:
-            parts = l.split(",")
-            try:
-                closes.append(float(parts[4]))
-            except:
-                pass
+        data = r.json()
+        if "values" not in data:
+            print(f"[WARN] SP500 MA: unexpected response: {data.get('message','no values key')}")
+            return {"ma50": None, "ma200": None, "death_cross": None}
+        closes = [float(v["close"]) for v in reversed(data["values"])]
         if len(closes) < 200:
             return {"ma50": None, "ma200": None, "death_cross": None}
         ma50  = round(sum(closes[-50:])  / 50,  0)
         ma200 = round(sum(closes[-200:]) / 200, 0)
         return {"ma50": ma50, "ma200": ma200, "death_cross": ma50 < ma200}
     except Exception as e:
-        print(f"[WARN] S&P MA (Stooq) failed: {e}")
+        print(f"[WARN] SP500 MA (Twelve Data) failed: {e}")
         return {"ma50": None, "ma200": None, "death_cross": None}
 
 
