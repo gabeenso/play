@@ -1,0 +1,43 @@
+{
+  "vix": {
+    "price": 24.06,
+    "prev": 25.09,
+    "change_pct": -4.11,
+    "change_bps": null,
+    "date": "2026-03-19"
+  },
+  "oil": {
+    "price": 93.39,
+    "prev": 98.48,
+    "change_pct": -5.17,
+    "change_bps": null,
+    "date": "2026-03-16"
+  },
+  "tnx": {
+    "price": 4.25,
+    "prev": 4.26,
+    "change_pct": -0.23,
+    "change_bps": null,
+    "date": "2026-03-19"
+  },
+  "hy": {
+    "price": 327.0,
+    "prev": 320.0,
+    "change_pct": null,
+    "change_bps": 7.0,
+    "date": "2026-03-19"
+  },
+  "ig": {
+    "price": 113.0,
+    "prev": 113.0,
+    "change_pct": null,
+    "change_bps": 0.0,
+    "date": "2026-03-19"
+  },
+  "sp_ma": {
+    "ma50": 6858.0,
+    "ma200": 6622.0,
+    "death_cross": false
+  },
+  "updated_utc": "2026-03-22T23:29:25Z"
+}
