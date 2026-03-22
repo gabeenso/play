@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Intel Briefing · Mon 23 Mar 2026 09:23 AEDT</title>
+<title>Intel Briefing · Mon 23 Mar 2026 00:14 AEDT</title>
 <style>
   :root{--bg:#0d0f14;--card:#141720;--card2:#1a1f2e;--border:#252a3a;--text:#e2e8f0;--muted:#8892a4;--danger:#ff4444;--danger-glow:rgba(255,68,68,.25);--caution:#f59e0b;--caution-glow:rgba(245,158,11,.25);--clear:#22c55e;--clear-glow:rgba(34,197,94,.25);--accent:#6366f1}
   *{box-sizing:border-box;margin:0;padding:0}
@@ -60,6 +60,7 @@
   hr{border:none;border-top:1px solid var(--border);margin:8px 0}
   .spinner{display:none;width:10px;height:10px;border:2px solid #22c55e;border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;vertical-align:middle;margin-left:6px}
   @keyframes spin{to{transform:rotate(360deg)}}
+  .stale-badge{display:inline-block;background:rgba(245,158,11,.15);color:#f59e0b;border:1px solid #f59e0b;border-radius:4px;padding:2px 6px;font-size:10px;margin-left:4px}
 </style>
 </head>
 <body>
@@ -69,7 +70,7 @@
   <div class="master-banner">
     <div>
       <h1>⚡ Weekly Intelligence Briefing</h1>
-      <div class="meta">Gabe Enslin · Last refreshed: <span id="last-updated">loading...</span> <span class="spinner" id="refresh-spinner"></span> &nbsp;<span class="live-badge">● LIVE</span></div>
+      <div class="meta">Gabe Enslin · Prices refreshed: <span id="last-updated">loading...</span><span class="spinner" id="refresh-spinner"></span> &nbsp;<span class="live-badge">● LIVE</span></div>
       <div class="meta" style="margin-top:4px">Editorial commentary: updated 20 Mar 2026</div>
     </div>
     <div style="text-align:right">
@@ -98,22 +99,22 @@
         <div class="live-card-sub" id="spx-delta"></div>
       </div>
       <div class="live-card">
-        <div class="live-card-label">VIX (Fear Index)</div>
+        <div class="live-card-label">VIX (Fear Index) <span class="stale-badge">daily</span></div>
         <div class="live-card-value" id="vix-val">—</div>
         <div class="live-card-sub" id="vix-delta"></div>
       </div>
       <div class="live-card">
-        <div class="live-card-label">Death Cross (50d/200d)</div>
-        <div class="live-card-value" style="font-size:14px" id="dc-label">Loading...</div>
+        <div class="live-card-label">Death Cross (50d/200d) <span class="stale-badge">daily</span></div>
+        <div class="live-card-value" style="font-size:14px" id="dc-label">—</div>
         <div class="live-card-sub" id="dc-sub">—</div>
       </div>
       <div class="live-card">
-        <div class="live-card-label">HY Credit Spreads</div>
+        <div class="live-card-label">HY Credit Spreads <span class="stale-badge">daily</span></div>
         <div class="live-card-value" id="hy-val">—</div>
         <div class="live-card-sub" id="hy-delta"></div>
       </div>
       <div class="live-card">
-        <div class="live-card-label">IG Credit Spreads</div>
+        <div class="live-card-label">IG Credit Spreads <span class="stale-badge">daily</span></div>
         <div class="live-card-value" id="ig-val">—</div>
         <div class="live-card-sub" id="ig-delta"></div>
       </div>
@@ -123,7 +124,7 @@
         <div class="live-card-sub" id="fg-sub"></div>
       </div>
       <div class="live-card">
-        <div class="live-card-label">Oil (WTI)</div>
+        <div class="live-card-label">Oil (WTI) <span class="stale-badge">daily</span></div>
         <div class="live-card-value" id="oil-val">—</div>
         <div class="live-card-sub" id="oil-delta"></div>
       </div>
@@ -138,7 +139,7 @@
         <div class="live-card-sub" id="aud-delta"></div>
       </div>
       <div class="live-card">
-        <div class="live-card-label">US 10Y Yield</div>
+        <div class="live-card-label">US 10Y Yield <span class="stale-badge">daily</span></div>
         <div class="live-card-value" id="tnx-val">—</div>
         <div class="live-card-sub" id="tnx-delta"></div>
       </div>
@@ -154,7 +155,7 @@
   </div>
   <div class="crypto-table-wrap">
     <table>
-      <thead><tr><th>Symbol</th><th>Price (USD)</th><th>24h</th><th>7d</th><th>Signal (weekly)</th></tr></thead>
+      <thead><tr><th>Symbol</th><th>Price (USD)</th><th>24h</th><th>Signal (weekly)</th></tr></thead>
       <tbody>
             <tr id="crypto-row-BTC">
               <td><span style="font-weight:700;color:#f7931a;font-size:15px">BTC</span></td>
@@ -436,200 +437,179 @@
   </div>
 
   <footer>
-    Market data: CoinGecko · Twelve Data · FRED (St. Louis Fed) · Alternative.me &nbsp;|&nbsp; Editorial: weekly research by Claude &nbsp;|&nbsp; Refreshes every 5 minutes &nbsp;|&nbsp; Not financial advice.
+    Prices: Twelve Data · CoinGecko · Alternative.me &nbsp;|&nbsp; Daily metrics (VIX/Oil/10Y/Spreads/MA): FRED via GitHub Actions &nbsp;|&nbsp; Not financial advice.
   </footer>
 
 </div>
 
 <script>
 const TWELVE_KEY = '9de622129104418cb717994ac9d7d70e';
-const FRED_KEY   = '6d18d219c04d01ecd8c5dd1a9dcf43f7';
 
-function deltaHtml(val, reverse) {
-  if (val === null || val === undefined) return '';
-  const up   = reverse ? '#ff4444' : '#22c55e';
-  const down = reverse ? '#22c55e' : '#ff4444';
-  const sign = val >= 0 ? '+' : '';
-  if (val > 0.05)  return `<span style="color:${up};font-weight:700">▲ ${sign}${val.toFixed(2)}%</span>`;
-  if (val < -0.05) return `<span style="color:${down};font-weight:700">▼ ${val.toFixed(2)}%</span>`;
-  return `<span style="color:#94a3b8;font-weight:700">= ${sign}${val.toFixed(2)}%</span>`;
+function dh(val, reverse) {
+  if (val == null) return '';
+  const up = reverse ? '#ff4444' : '#22c55e';
+  const dn = reverse ? '#22c55e' : '#ff4444';
+  const s  = val >= 0 ? '+' : '';
+  if (val >  0.05) return `<span style="color:${up};font-weight:700">▲ ${s}${val.toFixed(2)}%</span>`;
+  if (val < -0.05) return `<span style="color:${dn};font-weight:700">▼ ${val.toFixed(2)}%</span>`;
+  return `<span style="color:#94a3b8;font-weight:700">= ${s}${val.toFixed(2)}%</span>`;
 }
 
-function bpsDelta(bps) {
-  if (bps === null || bps === undefined) return '';
-  if (bps > 0)  return `<span style="color:#ff4444;font-weight:700">▲ +${bps.toFixed(0)} bps</span>`;
-  if (bps < 0)  return `<span style="color:#22c55e;font-weight:700">▼ ${bps.toFixed(0)} bps</span>`;
+function bh(bps) {
+  if (bps == null) return '';
+  if (bps > 0) return `<span style="color:#ff4444;font-weight:700">▲ +${bps.toFixed(0)} bps</span>`;
+  if (bps < 0) return `<span style="color:#22c55e;font-weight:700">▼ ${bps.toFixed(0)} bps</span>`;
   return `<span style="color:#94a3b8;font-weight:700">= 0 bps</span>`;
 }
 
-function set(id, html, isText) {
+function set(id, val, isText) {
   const el = document.getElementById(id);
   if (!el) return;
-  if (isText) el.textContent = html; else el.innerHTML = html;
+  isText ? (el.textContent = val) : (el.innerHTML = val);
 }
 
-async function fredObs(sid, limit) {
-  const url = `https://api.stlouisfed.org/fred/series/observations?series_id=${sid}&api_key=${FRED_KEY}&file_type=json&sort_order=desc&limit=${limit || 2}`;
-  const r = await fetch(url);
-  const d = await r.json();
-  return (d.observations || []).filter(o => o.value !== '.');
-}
-
-async function fetchTwelve() {
-  const url = `https://api.twelvedata.com/quote?symbol=SPX,XAU/USD,AUD/USD&apikey=${TWELVE_KEY}`;
-  const d   = await (await fetch(url)).json();
-
-  const spx = d['SPX'];
-  if (spx?.close) {
-    const p = parseFloat(spx.close), prev = parseFloat(spx.previous_close);
-    set('spx-val',   '$' + p.toLocaleString('en-US', {maximumFractionDigits:0}), true);
-    set('spx-delta', deltaHtml((p-prev)/prev*100));
-  }
-  const gold = d['XAU/USD'];
-  if (gold?.close) {
-    const p = parseFloat(gold.close), prev = parseFloat(gold.previous_close);
-    set('gold-val',   '$' + p.toLocaleString('en-US', {maximumFractionDigits:0}), true);
-    set('gold-delta', deltaHtml((p-prev)/prev*100));
-  }
-  const aud = d['AUD/USD'];
-  if (aud?.close) {
-    const p = parseFloat(aud.close), prev = parseFloat(aud.previous_close);
-    set('aud-val',   p.toFixed(4), true);
-    set('aud-delta', deltaHtml((p-prev)/prev*100));
-  }
-}
-
-async function fetchFred() {
-  // VIX
+// ── Load FRED data from market_data.json (served same-origin, no CORS) ──
+async function loadMarketData() {
   try {
-    const obs = await fredObs('VIXCLS');
-    if (obs.length >= 2) {
-      const v = parseFloat(obs[0].value), pv = parseFloat(obs[1].value);
+    const r = await fetch('market_data.json?t=' + Date.now());
+    if (!r.ok) return;
+    const d = await r.json();
+
+    // VIX
+    if (d.vix?.price != null) {
       const el = document.getElementById('vix-val');
+      const v  = d.vix.price;
       el.style.color = v > 30 ? '#ff4444' : (v > 20 ? '#f59e0b' : '#22c55e');
       el.textContent  = v.toFixed(1);
-      set('vix-delta', deltaHtml((v-pv)/pv*100, true));
+      set('vix-delta', dh(d.vix.change_pct, true));
     }
-  } catch(e) { console.warn('VIX',e); }
-
-  // Oil
-  try {
-    const obs = await fredObs('DCOILWTICO');
-    if (obs.length >= 2) {
-      const v = parseFloat(obs[0].value), pv = parseFloat(obs[1].value);
-      set('oil-val',   '$' + v.toFixed(2), true);
-      set('oil-delta', deltaHtml((v-pv)/pv*100, true));
+    // Oil
+    if (d.oil?.price != null) {
+      set('oil-val',   '$' + d.oil.price.toFixed(2), true);
+      set('oil-delta', dh(d.oil.change_pct, true));
     }
-  } catch(e) { console.warn('Oil',e); }
-
-  // 10Y
-  try {
-    const obs = await fredObs('DGS10');
-    if (obs.length >= 2) {
-      const v = parseFloat(obs[0].value), pv = parseFloat(obs[1].value);
-      set('tnx-val',   v.toFixed(2) + '%', true);
-      set('tnx-delta', deltaHtml((v-pv)/pv*100, true));
+    // 10Y
+    if (d.tnx?.price != null) {
+      set('tnx-val',   d.tnx.price.toFixed(2) + '%', true);
+      set('tnx-delta', dh(d.tnx.change_pct, true));
     }
-  } catch(e) { console.warn('10Y',e); }
-
-  // HY Spreads
-  try {
-    const obs = await fredObs('BAMLH0A0HYM2');
-    if (obs.length >= 2) {
-      const v = parseFloat(obs[0].value)*100, pv = parseFloat(obs[1].value)*100;
+    // HY Spreads
+    if (d.hy?.price != null) {
       const el = document.getElementById('hy-val');
+      const v  = d.hy.price;
       el.textContent = v.toFixed(0) + ' bps';
       el.style.color  = v > 500 ? '#ff4444' : (v > 350 ? '#f59e0b' : '#22c55e');
-      set('hy-delta', bpsDelta(v-pv) + ` · <span style="font-size:11px">FRED: ${obs[0].date}</span>`);
+      set('hy-delta', bh(d.hy.change_bps) + (d.hy.date ? ` · <span style="font-size:11px">FRED: ${d.hy.date}</span>` : ''));
     }
-  } catch(e) { console.warn('HY',e); }
-
-  // IG Spreads
-  try {
-    const obs = await fredObs('BAMLC0A4CBBB');
-    if (obs.length >= 2) {
-      const v = parseFloat(obs[0].value)*100, pv = parseFloat(obs[1].value)*100;
+    // IG Spreads
+    if (d.ig?.price != null) {
       const el = document.getElementById('ig-val');
+      const v  = d.ig.price;
       el.textContent = v.toFixed(0) + ' bps';
       el.style.color  = v > 200 ? '#ff4444' : (v > 120 ? '#f59e0b' : '#22c55e');
-      set('ig-delta', bpsDelta(v-pv) + ` · <span style="font-size:11px">FRED: ${obs[0].date}</span>`);
+      set('ig-delta', bh(d.ig.change_bps) + (d.ig.date ? ` · <span style="font-size:11px">FRED: ${d.ig.date}</span>` : ''));
     }
-  } catch(e) { console.warn('IG',e); }
+    // Death Cross
+    if (d.sp_ma?.ma50 != null) {
+      const isDeath = d.sp_ma.death_cross;
+      const el = document.getElementById('dc-label');
+      el.style.color = isDeath ? '#ff4444' : '#22c55e';
+      el.textContent  = isDeath ? '⚠ Death Cross Active' : '✓ No Death Cross';
+      set('dc-sub', `50d: ${d.sp_ma.ma50} · 200d: ${d.sp_ma.ma200}`, true);
+    }
+  } catch(e) { console.warn('market_data.json load failed:', e); }
 }
 
-async function fetchSpMA() {
-  const obs = await fredObs('SP500', 210);
-  const closes = obs.map(o => parseFloat(o.value)).reverse();
-  if (closes.length < 200) return;
-  const ma50  = closes.slice(-50).reduce((a,b)=>a+b,0)/50;
-  const ma200 = closes.slice(-200).reduce((a,b)=>a+b,0)/200;
-  const isDeath = ma50 < ma200;
-  const el = document.getElementById('dc-label');
-  el.style.color = isDeath ? '#ff4444' : '#22c55e';
-  el.textContent  = isDeath ? '⚠ Death Cross Active' : '✓ No Death Cross';
-  set('dc-sub', `50d: ${ma50.toFixed(0)} · 200d: ${ma200.toFixed(0)}`, true);
+// ── Twelve Data: SPX (separate call), Gold + AUD/USD ──
+async function fetchTwelve() {
+  // Forex batch
+  try {
+    const fd = await (await fetch(`https://api.twelvedata.com/quote?symbol=XAU/USD,AUD/USD&apikey=${TWELVE_KEY}`)).json();
+    const gold = fd['XAU/USD'];
+    if (gold?.close) {
+      const p = +gold.close, pv = +gold.previous_close;
+      set('gold-val',   '$' + p.toLocaleString('en-US', {maximumFractionDigits:0}), true);
+      set('gold-delta', dh((p-pv)/pv*100));
+    }
+    const aud = fd['AUD/USD'];
+    if (aud?.close) {
+      const p = +aud.close, pv = +aud.previous_close;
+      set('aud-val',   p.toFixed(4), true);
+      set('aud-delta', dh((p-pv)/pv*100));
+    }
+  } catch(e) { console.warn('Twelve forex failed:', e); }
+
+  // SPX separate call
+  try {
+    const sd = await (await fetch(`https://api.twelvedata.com/quote?symbol=SPX&apikey=${TWELVE_KEY}`)).json();
+    if (sd?.close) {
+      const p = +sd.close, pv = +sd.previous_close;
+      set('spx-val',   '$' + p.toLocaleString('en-US', {maximumFractionDigits:0}), true);
+      set('spx-delta', dh((p-pv)/pv*100));
+    }
+  } catch(e) { console.warn('Twelve SPX failed:', e); }
 }
 
-async function fetchFearGreed() {
-  const d     = await (await fetch('https://api.alternative.me/fng/?limit=1')).json();
-  const entry = d.data[0];
-  const val   = parseInt(entry.value);
-  const label = entry.value_classification;
-  const color = val < 30 ? '#ff4444' : (val < 50 ? '#f59e0b' : '#22c55e');
-  const emoji = val < 25 ? '😱' : (val < 40 ? '😨' : (val < 55 ? '😐' : (val < 75 ? '😊' : '🤩')));
-  const el    = document.getElementById('fg-val');
-  el.style.color = color;
-  el.textContent  = `${emoji} ${val}`;
-  set('fg-sub',    label, true);
-  set('fg-header', `F&G: ${val} — ${label} ${emoji}`, true);
-}
-
+// ── CoinGecko crypto ──
 async function fetchCrypto() {
-  const url = 'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,ripple,solana&vs_currencies=usd&include_24hr_change=true&include_7d_change=true';
-  const d   = await (await fetch(url)).json();
-  const map = {BTC:'bitcoin', ETH:'ethereum', XRP:'ripple', SOL:'solana'};
-  for (const [sym, id] of Object.entries(map)) {
-    const row = document.getElementById(`crypto-row-${sym}`);
-    if (!row || !d[id]) continue;
-    const p   = d[id].usd;
-    const c24 = d[id].usd_24h_change || 0;
-    const c7d = d[id].usd_7d_change  || 0;
-    const ps  = p > 100 ? '$' + p.toLocaleString('en-US', {maximumFractionDigits:0}) : '$' + p.toFixed(4);
-    row.querySelector('.crypto-price').innerHTML = `<strong>${ps}</strong>`;
-    row.querySelector('.crypto-24h').innerHTML   = deltaHtml(c24);
-    row.querySelector('.crypto-7d').innerHTML    = deltaHtml(c7d);
-  }
+  try {
+    const url = 'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,ripple,solana&vs_currencies=usd&include_24hr_change=true';
+    const d   = await (await fetch(url)).json();
+    const map = {BTC:'bitcoin', ETH:'ethereum', XRP:'ripple', SOL:'solana'};
+    for (const [sym, id] of Object.entries(map)) {
+      const row = document.getElementById(`crypto-row-${sym}`);
+      if (!row || !d[id]) continue;
+      const p   = d[id].usd;
+      const c24 = d[id].usd_24h_change || 0;
+      const ps  = p > 100 ? '$' + p.toLocaleString('en-US', {maximumFractionDigits:0}) : '$' + p.toFixed(4);
+      row.querySelector('.crypto-price').innerHTML = `<strong>${ps}</strong>`;
+      row.querySelector('.crypto-24h').innerHTML   = dh(c24);
+    }
+  } catch(e) { console.warn('Crypto failed:', e); }
 }
 
-// ── Refresh loop ──────────────────────────────────────────────
+// ── Fear & Greed ──
+async function fetchFG() {
+  try {
+    const d     = await (await fetch('https://api.alternative.me/fng/?limit=1')).json();
+    const entry = d.data[0];
+    const val   = +entry.value;
+    const label = entry.value_classification;
+    const color = val < 30 ? '#ff4444' : (val < 50 ? '#f59e0b' : '#22c55e');
+    const emoji = val < 25 ? '😱' : (val < 40 ? '😨' : (val < 55 ? '😐' : (val < 75 ? '😊' : '🤩')));
+    const el    = document.getElementById('fg-val');
+    el.style.color = color;
+    el.textContent  = `${emoji} ${val}`;
+    set('fg-sub',    label, true);
+    set('fg-header', `F&G: ${val} — ${label} ${emoji}`, true);
+  } catch(e) { console.warn('F&G failed:', e); }
+}
+
+// ── Refresh loop ──
 let lastRefresh = null;
 
 function updateTimer() {
   if (!lastRefresh) return;
-  const s = Math.round((Date.now() - lastRefresh) / 1000);
+  const s   = Math.round((Date.now() - lastRefresh) / 1000);
   const txt = s < 60 ? `${s}s ago` : `${Math.floor(s/60)}m ${s%60}s ago`;
-  const el  = document.getElementById('last-updated');
-  if (el) el.textContent = txt;
+  set('last-updated', txt, true);
 }
 
 async function refreshAll() {
   const spin = document.getElementById('refresh-spinner');
   if (spin) spin.style.display = 'inline-block';
-  await Promise.allSettled([
-    fetchTwelve(),
-    fetchFred(),
-    fetchSpMA(),
-    fetchFearGreed(),
-    fetchCrypto()
-  ]);
+  await Promise.allSettled([fetchTwelve(), fetchCrypto(), fetchFG()]);
   lastRefresh = Date.now();
   if (spin) spin.style.display = 'none';
   updateTimer();
 }
 
+// Market data (FRED) loads once — it's daily, no need to re-fetch every 5 min
+loadMarketData();
+// Live prices refresh every 5 min
 refreshAll();
-setInterval(refreshAll,  5 * 60 * 1000);  // refresh data every 5 min
-setInterval(updateTimer, 15 * 1000);       // update "X ago" counter every 15s
+setInterval(refreshAll,  5 * 60 * 1000);
+setInterval(updateTimer, 15 * 1000);
 </script>
 </body>
 </html>
