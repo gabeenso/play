@@ -14,30 +14,30 @@
     "date": "2026-03-30"
   },
   "tnx": {
-    "price": 4.33,
-    "prev": 4.3,
-    "change_pct": 0.7,
+    "price": 4.31,
+    "prev": 4.33,
+    "change_pct": -0.46,
     "change_bps": null,
-    "date": "2026-04-01"
+    "date": "2026-04-02"
   },
   "hy": {
-    "price": 316.0,
-    "prev": 328.0,
+    "price": 317.0,
+    "prev": 316.0,
     "change_pct": null,
-    "change_bps": -12.0,
-    "date": "2026-04-01"
+    "change_bps": 1.0,
+    "date": "2026-04-02"
   },
   "ig": {
-    "price": 110.0,
-    "prev": 113.0,
+    "price": 109.0,
+    "prev": 110.0,
     "change_pct": null,
-    "change_bps": -3.0,
-    "date": "2026-04-01"
+    "change_bps": -1.0,
+    "date": "2026-04-02"
   },
   "sp_ma": {
-    "ma50": 6789.0,
-    "ma200": 6642.0,
+    "ma50": 6784.0,
+    "ma200": 6645.0,
     "death_cross": false
   },
-  "updated_utc": "2026-04-02T22:29:23Z"
+  "updated_utc": "2026-04-03T22:31:05Z"
 }
