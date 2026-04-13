@@ -1,37 +1,37 @@
 {
   "vix": {
-    "price": 19.49,
-    "prev": 21.04,
-    "change_pct": -7.37,
+    "price": 19.23,
+    "prev": 19.49,
+    "change_pct": -1.33,
     "change_bps": null,
-    "date": "2026-04-09"
+    "date": "2026-04-10"
   },
   "oil": {},
   "tnx": {
-    "price": 4.29,
+    "price": 4.31,
     "prev": 4.29,
-    "change_pct": 0.0,
+    "change_pct": 0.47,
     "change_bps": null,
-    "date": "2026-04-09"
+    "date": "2026-04-10"
   },
   "hy": {
-    "price": 290.0,
-    "prev": 294.0,
+    "price": 294.0,
+    "prev": 290.0,
     "change_pct": null,
-    "change_bps": -4.0,
-    "date": "2026-04-09"
+    "change_bps": 4.0,
+    "date": "2026-04-10"
   },
   "ig": {
-    "price": 105.0,
+    "price": 104.0,
     "prev": 105.0,
     "change_pct": null,
-    "change_bps": 0.0,
-    "date": "2026-04-09"
+    "change_bps": -1.0,
+    "date": "2026-04-10"
   },
   "sp_ma": {
     "ma50": 6762.0,
     "ma200": 6663.0,
     "death_cross": false
   },
-  "updated_utc": "2026-04-12T22:31:43Z"
+  "updated_utc": "2026-04-13T22:41:09Z"
 }
